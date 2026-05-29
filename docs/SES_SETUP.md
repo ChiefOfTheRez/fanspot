@@ -1,23 +1,25 @@
-# Amazon SES Setup for FanSpot
+# FanSpot SES Setup
 
-FanSpot can send real verification emails through Amazon SES.
-
-## Steps
-
-1. Open Amazon SES in the same region you plan to use, such as `us-east-1`.
-2. Create a domain identity for your domain.
-3. Add the SES DNS verification records to your domain DNS.
-4. Add DKIM records when SES provides them.
-5. Create or choose a sender address, such as `no-reply@yourdomain.com`.
-6. Request SES production access if you want to send to normal public email addresses.
-7. Set App Runner environment variables:
+For the first ECS test server, keep:
 
 ```env
-EMAIL_PROVIDER="ses"
-AWS_REGION="us-east-1"
-AWS_SES_FROM_EMAIL="FanSpot <no-reply@yourdomain.com>"
+EMAIL_PROVIDER=console
 ```
 
-## Sandbox warning
+This avoids blocking deployment on email setup.
 
-SES sandbox mode is okay for early testing, but it can only send to verified recipients. For a real beta, request production access.
+## Later SES setup
+
+1. Open Amazon SES in the same AWS account.
+2. Verify the sender domain or sender email.
+3. Move out of the SES sandbox when ready for real users.
+4. Add ECS environment variables:
+
+```env
+EMAIL_PROVIDER=ses
+AWS_REGION=us-east-2
+AWS_SES_FROM_EMAIL=FanSpot <no-reply@yourdomain.com>
+AWS_SES_CONFIGURATION_SET=
+```
+
+5. Restart the ECS service.

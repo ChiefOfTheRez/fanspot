@@ -1,26 +1,26 @@
-# Personal Domain Setup
+# FanSpot Domain Setup
 
-For live testing, use a subdomain first:
+For the first ECS test deployment, use the temporary ECS/load-balancer URL.
 
-```text
-fanspot.yourdomain.com
+After the test server is stable, connect a real domain through Route 53 or your DNS provider.
+
+## Recommended production path
+
+```txt
+Domain / Route 53
+   ↓
+CloudFront or Application Load Balancer
+   ↓
+ECS/Fargate FanSpot service
 ```
 
-This avoids disrupting your existing main website.
+## After the domain works
 
-## Route 53 domain
-
-If the domain is in Route 53, App Runner can link to it more directly.
-
-## External domain provider
-
-If your domain is on Namecheap, GoDaddy, Cloudflare, etc., App Runner will give you DNS records. Add those records at your provider and wait for DNS validation.
-
-After the domain works, update App Runner environment variables:
+Update the ECS environment variables:
 
 ```env
-NEXTAUTH_URL="https://fanspot.yourdomain.com"
-APP_URL="https://fanspot.yourdomain.com"
+NEXTAUTH_URL=https://yourdomain.com
+APP_URL=https://yourdomain.com
 ```
 
-Then redeploy.
+Then redeploy/restart the ECS service so NextAuth uses the final URL.

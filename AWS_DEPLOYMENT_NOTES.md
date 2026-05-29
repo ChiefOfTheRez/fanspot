@@ -1,67 +1,45 @@
-# AWS Deployment Notes
+# FanSpot AWS Deployment Notes
 
-## Recommended MVP AWS setup
+FanSpot is now prepared for **AWS ECS/Fargate** test deployment instead of App Runner.
 
-Use this early:
-
-- AWS Amplify for the Next.js app
-- Amazon RDS PostgreSQL for the database
-- Amazon S3 for uploaded media
-- Amazon CloudFront for media delivery
-
-## Environment variables
-
-Set these in Amplify environment settings:
+## First test stack
 
 ```txt
-DATABASE_URL
-NEXTAUTH_URL
-NEXTAUTH_SECRET
-AWS_REGION
-AWS_ACCESS_KEY_ID
-AWS_SECRET_ACCESS_KEY
-AWS_S3_BUCKET
-AWS_CLOUDFRONT_URL
-SEGPAY_WEBHOOK_SECRET
+Amazon ECR      stores the Docker image
+Amazon ECS      runs the Next.js container
+AWS Fargate     serverless container compute
+Amazon RDS      PostgreSQL database
+CloudWatch Logs container logs
 ```
 
-## RDS PostgreSQL
+Use `us-east-2 / Ohio` for the first test so the app and database are in the same region.
 
-Use PostgreSQL, not DynamoDB, for the core MVP because the app needs relational records:
+## Container
 
-- Users
-- Creator profiles
-- Follows
-- Subscriptions
-- Posts
-- Reports
-- Payouts
-- Messages
-- Audit logs
+The Docker container exposes port `3000`.
 
-## S3 bucket layout
-
-Suggested key layout:
+Startup command:
 
 ```txt
-users/{userId}/avatars/{fileId}.jpg
-creators/{creatorId}/banners/{fileId}.jpg
-posts/{postId}/{fileId}.jpg
-posts/{postId}/{fileId}.mp4
-moderation/review/{mediaId}
+npm run start:ecs
 ```
 
-## CloudFront
+This runs:
 
-CloudFront should sit in front of S3 for fast delivery. Keep the bucket private and use CloudFront origin access controls.
+```txt
+prisma generate && prisma db push && next start
+```
 
-## Production security checklist
+This is acceptable for the first test server. Before production, replace `prisma db push` with proper migrations.
 
-- Use IAM roles instead of long-lived keys where possible
-- Keep S3 buckets private
-- Restrict upload MIME types and file sizes
-- Turn on RDS backups
-- Use Multi-AZ when budget allows
-- Use CloudWatch alarms
-- Add rate limiting before public launch
-- Use AWS Secrets Manager for production secrets
+## Health check
+
+Use:
+
+```txt
+/api/health
+```
+
+## Security reminder
+
+Do not upload `.env` files. Set secrets in ECS or Secrets Manager.

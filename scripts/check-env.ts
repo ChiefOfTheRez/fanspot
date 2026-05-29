@@ -20,7 +20,7 @@ if (process.env.UPLOADS_ENABLED === "true") {
 if (missing.length) {
   console.log("FanSpot env check: missing production variables");
   for (const key of missing) console.log(`- ${key}`);
-  console.log("Set these in AWS App Runner environment variables before production testing.");
+  console.log("Set these in the ECS service environment variables or AWS Secrets Manager before live testing.");
   process.exitCode = 1;
 } else {
   console.log("FanSpot env check passed.");

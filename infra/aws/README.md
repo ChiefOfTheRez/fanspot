@@ -1,18 +1,21 @@
-# AWS Infrastructure Notes
+# FanSpot AWS Infrastructure Notes
 
-This folder is intentionally documentation-first. The safest next step is to create infrastructure in a separate IaC project once the app's first database-backed version is ready.
+The current AWS target is ECS/Fargate.
 
-## Minimum services
+## Test resources
 
-- Amplify Hosting or ECS Fargate for the Next.js app.
-- RDS PostgreSQL.
-- S3 upload bucket.
-- CloudFront distribution.
-- Secrets Manager.
-- CloudWatch logs and alarms.
+- ECR repository: `fanspot-test`
+- ECS service: `fanspot-test`
+- Container port: `3000`
+- Health check path: `/api/health`
+- RDS PostgreSQL database
 
-## Suggested environments
+## Security group reminder
 
-- `dev`: cheap, disposable, small RDS instance.
-- `staging`: production-like, test webhooks, test backups.
-- `production`: locked down, monitored, backed up.
+RDS should allow PostgreSQL only from the ECS service security group.
+
+```txt
+PostgreSQL TCP 5432 from ECS security group
+```
+
+Do not expose RDS publicly for the normal app path.

@@ -1,9 +1,13 @@
-import { ok } from "@/lib/api";
+import { NextResponse } from "next/server";
 
-export async function GET() {
-  return ok({
+export const dynamic = "force-dynamic";
+
+export function GET() {
+  return NextResponse.json({
+    ok: true,
+    service: "fanspot",
     status: "healthy",
-    app: "FanSpot Launch Ready",
+    environment: process.env.APP_ENV ?? process.env.NODE_ENV ?? "unknown",
     timestamp: new Date().toISOString()
   });
 }

@@ -1,0 +1,30 @@
+# Dependencies/build output
+node_modules
+.next
+out
+coverage
+playwright-report
+test-results
+
+# Local env/secrets must never be copied into the container image
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# Local database/runtime files
+prisma/dev.db
+prisma/dev.db-journal
+*.sqlite
+*.db
+
+# VCS/editor/OS noise
+.git
+.gitignore
+.DS_Store
+.vscode
+.idea
+*.log
+
+# Local AWS/build helpers
+awscliv2.zip
