@@ -30,6 +30,7 @@ export const creatorCategories = [
   "Gaming",
   "Fitness",
   "Cosplay",
+  "AI Creators",
   "Music",
   "Art",
   "Lifestyle",

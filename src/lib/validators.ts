@@ -4,8 +4,8 @@ export const creatorApplicationSchema = z.object({
   displayName: z.string().min(2).max(80),
   desiredUsername: z.string().min(3).max(30).regex(/^[a-z0-9_]+$/).optional(),
   category: z.string().min(2).max(60),
-  audienceSummary: z.string().min(20).max(1000),
-  planSummary: z.string().min(20).max(1000)
+  audienceSummary: z.string().min(5).max(1000),
+  planSummary: z.string().min(5).max(1000)
 });
 
 export const postCreateSchema = z.object({

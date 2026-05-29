@@ -1,6 +1,7 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
+import AppleProvider from "next-auth/providers/apple";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
@@ -95,6 +96,15 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   );
 }
 
+if (process.env.APPLE_CLIENT_ID && process.env.APPLE_CLIENT_SECRET) {
+  providers.push(
+    AppleProvider({
+      clientId: process.env.APPLE_CLIENT_ID,
+      clientSecret: process.env.APPLE_CLIENT_SECRET
+    })
+  );
+}
+
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
@@ -104,12 +114,12 @@ export const authOptions: NextAuthOptions = {
   providers,
   callbacks: {
     async signIn({ user, account, profile }) {
-      if (account?.provider !== "google") return true;
+      if (account?.provider !== "google" && account?.provider !== "apple") return true;
       const email = user.email ?? profile?.email;
       return Boolean(email);
     },
     async jwt({ token, user, account, profile }) {
-      if (account?.provider === "google") {
+      if (account?.provider === "google" || account?.provider === "apple") {
         const email = user?.email ?? token.email ?? profile?.email;
         if (email) {
           const dbUser = await upsertOAuthUser(email, user?.name ?? token.name, user?.image ?? token.picture);

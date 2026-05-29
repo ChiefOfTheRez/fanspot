@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true, emailVerified: true } });
     if (!user) return fail("User not found", 404);
     if (user.role === "CREATOR" || user.role === "ADMIN") return fail("Creator tools are already enabled for this account.", 409);
-    if (!user.emailVerified) return fail("Verify your email before submitting a creator application.", 403);
+    // Test deployment: email delivery may be console-only, so do not block creator applications on email verification.
 
     const application = await prisma.creatorApplication.upsert({
       where: { userId: session.user.id },

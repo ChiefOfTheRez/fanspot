@@ -9,11 +9,11 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const settings = [
-  { icon: Lock, title: "Security", text: "Password, sessions, and login protection." },
-  { icon: Bell, title: "Notifications", text: "Email, creator updates, messages, and report alerts." },
-  { icon: Palette, title: "Appearance", text: "Dark mode first. Creator themes live under Studio settings." },
-  { icon: CreditCard, title: "Billing", text: "Subscription and payment settings after processor approval." },
-  { icon: ShieldCheck, title: "Safety", text: "Blocked users, report history, and privacy controls." }
+  { icon: Lock, title: "Security", text: "Password login is active. Two-factor auth, session review, and connected-device controls are planned for the next security pass.", actions: ["Change password", "Review sessions"] },
+  { icon: Bell, title: "Alerts", text: "Follower events, creator updates, support replies, and account warnings will be grouped as Alerts instead of Notifications.", actions: ["Email alerts", "Creator updates"] },
+  { icon: CreditCard, title: "Billing", text: "Subscription management and saved payment methods will connect after the payment processor is finalized.", actions: ["Payment methods", "Spending history"] },
+  { icon: Palette, title: "Appearance", text: "Dark mode is the MVP default. Creator theme controls stay inside Studio settings.", actions: ["Dark theme", "Compact cards"] },
+  { icon: ShieldCheck, title: "Safety", text: "Blocked users, report history, age-gated browsing, and privacy tools will live here.", actions: ["Blocked users", "Report history"] }
 ];
 
 export const dynamic = "force-dynamic";
@@ -29,7 +29,7 @@ export default async function SettingsPage() {
       <div className="space-y-5 pb-24">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-white">Settings</h1>
-          <p className="mt-2 text-sm text-slate-400">Manage your account, email verification, mailing-list preference, and privacy settings.</p>
+          <p className="mt-2 text-sm text-slate-400">Manage your account and MVP control areas.</p>
         </div>
         <Card><AccountSettingsPanel initial={{ ...user, emailVerified: Boolean(user.emailVerified) }} /></Card>
         <div className="grid gap-4 md:grid-cols-2">
@@ -42,6 +42,9 @@ export default async function SettingsPage() {
                   <div>
                     <h2 className="font-black text-white">{item.title}</h2>
                     <p className="mt-2 text-sm leading-6 text-slate-400">{item.text}</p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {item.actions.map((action) => <button key={action} className="rounded-2xl border border-slate-800 px-3 py-2 text-xs font-bold text-slate-200 hover:border-blue-500 hover:text-white">{action}</button>)}
+                    </div>
                   </div>
                 </div>
               </Card>

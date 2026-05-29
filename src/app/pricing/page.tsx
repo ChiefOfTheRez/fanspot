@@ -11,7 +11,7 @@ const creatorTiers = [
     split: "80 / 20",
     creatorShare: "80% creator share",
     platformShare: "20% platform share",
-    benefits: ["Text and image posts", "Public and follower posts", "Basic creator profile", "Manual weekly payouts", "No video uploads"]
+    benefits: ["Text and image posts", "Public and follower posts", "Basic creator profile", "Manual weekly payouts", "Quality-first creator review"]
   },
   {
     name: "Silver",
@@ -64,8 +64,10 @@ export default function PricingPage() {
           <Card><h3 className="font-black text-white">Creator applications</h3><p className="mt-2 text-sm leading-6 text-slate-400">Creator tools unlock after application review. Fans do not receive posting or wallet privileges by default.</p></Card>
           <Card><h3 className="font-black text-white">Payments</h3><p className="mt-2 text-sm leading-6 text-slate-400">Paid subscriptions, chargeback reserves, and payout rules should be connected to the approved payment processor before public monetization.</p></Card>
         </section>
-        <SectionHeader title="Ready to join?" description="Create a fan account now, or apply for creator tools after verifying your email." />
-        <div className="flex gap-3"><ButtonLink href="/signup">Create account</ButtonLink><Link href="/creator/apply" className="rounded-2xl border border-slate-800 px-5 py-3 text-sm font-black text-white hover:bg-white/5">Apply as creator</Link></div>
+        <div className="mt-20">
+          <SectionHeader title="Ready to join?" description="Create a fan account now, or apply for creator tools after verifying your email." />
+          <div className="flex gap-3"><ButtonLink href="/signup">Create account</ButtonLink><Link href="/creator/apply" className="rounded-2xl border border-slate-800 px-5 py-3 text-sm font-black text-white hover:bg-white/5">Apply as creator</Link></div>
+        </div>
       </div>
     </main>
   );

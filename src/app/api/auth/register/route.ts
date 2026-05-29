@@ -10,6 +10,10 @@ function normalizeUsername(username: string) {
   return username.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 24);
 }
 
+function shouldAutoVerifyForTest() {
+  return process.env.EMAIL_PROVIDER === "console" || process.env.FANSPOT_TEST_MODE === "true";
+}
+
 async function createEmailVerification(email: string) {
   const token = crypto.randomBytes(32).toString("hex");
   const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
@@ -62,15 +66,18 @@ export async function POST(request: Request) {
         passwordHash,
         phoneNumber: parsed.phoneNumber || null,
         emailMarketingOptIn: parsed.emailMarketingOptIn,
+        emailVerified: shouldAutoVerifyForTest() ? new Date() : null,
         role: "FAN",
         status: "ACTIVE"
       },
       select: { id: true, email: true, username: true, displayName: true, role: true }
     });
 
-    await createEmailVerification(email);
+    if (!shouldAutoVerifyForTest()) {
+      await createEmailVerification(email);
+    }
 
-    return ok({ accepted: true, user, emailVerificationRequired: true }, { status: 201 });
+    return ok({ accepted: true, user, emailVerificationRequired: !shouldAutoVerifyForTest() }, { status: 201 });
   } catch (error) {
     return handleApiError(error);
   }

@@ -11,7 +11,7 @@ export default function NotificationsPage() {
   return (
     <Shell active="/notifications">
       <div className="space-y-5 pb-24">
-        <PageHero eyebrow="Notifications" title="Your activity center" description="Follower events, creator updates, reports, and system alerts will appear here." />
+        <PageHero eyebrow="Alerts" title="Alerts" />
         <Card>
           <div className="space-y-3">
             {notifications.length ? notifications.map((item) => (
@@ -26,7 +26,7 @@ export default function NotificationsPage() {
                   <p className="mt-2 text-xs text-slate-500">{item.createdAt}</p>
                 </div>
               </Link>
-            )) : <EmptyState icon={<Bell className="h-10 w-10" />} title="No notifications yet" description="Notifications will appear here after you follow creators, receive messages, or trigger account events." />}
+            )) : <EmptyState icon={<Bell className="h-10 w-10" />} title="No alerts" description="" />}
           </div>
         </Card>
       </div>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { FormEvent, useState } from "react";
 import { Card } from "@/components/Card";
+import { AppleAuthButton } from "@/components/AppleAuthButton";
 import { GoogleAuthButton } from "@/components/GoogleAuthButton";
 import { Logo } from "@/components/Logo";
 
@@ -47,8 +48,9 @@ export default function LoginPage() {
           <p className="mt-2 text-sm text-slate-400">Welcome back to FanSpot.</p>
           <div className="mt-6">
             <GoogleAuthButton />
+            <div className="mt-3"><AppleAuthButton /></div>
           </div>
-          {process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true" ? <div className="my-6 flex items-center gap-3"><div className="h-px flex-1 bg-slate-800" /><span className="text-xs font-bold uppercase tracking-wide text-slate-500">or</span><div className="h-px flex-1 bg-slate-800" /></div> : null}
+          {(process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true" || process.env.NEXT_PUBLIC_APPLE_AUTH_ENABLED === "true") ? <div className="my-6 flex items-center gap-3"><div className="h-px flex-1 bg-slate-800" /><span className="text-xs font-bold uppercase tracking-wide text-slate-500">or</span><div className="h-px flex-1 bg-slate-800" /></div> : null}
           <form className="mt-6 space-y-4" onSubmit={onSubmit}>
             <label className="block text-sm font-bold text-slate-300">
               Username or email

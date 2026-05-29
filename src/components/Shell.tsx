@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { getServerSession } from "next-auth";
-import { Bell, Bookmark, Compass, Home, LayoutDashboard, LifeBuoy, MessageCircle, Search, Settings, User, Wallet } from "lucide-react";
+import { Bell, Bookmark, Compass, Home, LayoutDashboard, LifeBuoy, MessageCircle, Settings, User, Wallet } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -14,9 +14,8 @@ type NavItem = { label: string; href: string; icon: LucideIcon; roles?: Array<"F
 const navItems: NavItem[] = [
   { label: "Home", href: "/feed", icon: Home },
   { label: "Discovery", href: "/discover", icon: Compass },
-  { label: "Search", href: "/search", icon: Search },
   { label: "Messages", href: "/messages", icon: MessageCircle },
-  { label: "Notifications", href: "/notifications", icon: Bell },
+  { label: "Alerts", href: "/notifications", icon: Bell },
   { label: "Bookmarks", href: "/bookmarks", icon: Bookmark },
   { label: "Profile", href: "/profile", icon: User },
   { label: "Settings", href: "/settings", icon: Settings },
@@ -63,15 +62,7 @@ export async function Shell({ children, rightRail, active = "/feed" }: { childre
       <header className="sticky top-0 z-20 border-b border-slate-800 bg-slate-950/80 px-4 py-3 backdrop-blur-xl lg:ml-72">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <div className="lg:hidden"><Logo /></div>
-          <Link href="/search" className="hidden flex-1 items-center rounded-2xl border border-slate-800 bg-white/5 px-4 py-3 text-sm text-slate-400 hover:border-blue-500 md:flex">
-            <Search className="mr-3 h-4 w-4" aria-hidden="true" /> Search creators, posts, messages...
-          </Link>
-          <div className="flex items-center gap-2">
-            <Link href="/settings" className="rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500">
-              Account settings
-            </Link>
-            <div className="hidden sm:block"><SignOutButton /></div>
-          </div>
+          <p className="hidden text-sm font-bold text-slate-400 md:block">FanSpot test environment</p>
         </div>
         {session?.user?.id && !user?.emailVerified ? (
           <div className="mx-auto mt-3 max-w-7xl rounded-2xl border border-yellow-400/20 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">

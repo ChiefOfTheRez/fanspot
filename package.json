@@ -35,7 +35,7 @@
     "aws:deploy-check": "npm run check:env && npm run typecheck && npm run test && npm run build",
     "use:local-sqlite": "node scripts/use-prisma-schema.cjs local",
     "use:aws-postgres": "node scripts/use-prisma-schema.cjs aws",
-    "start:ecs": "prisma generate && prisma db push && next start",
+    "start:ecs": "prisma generate && prisma db push && prisma db seed && next start",
     "ecs:db:push": "prisma generate && prisma db push",
     "ecs:build-image": "docker build -t fanspot-test ."
   },
