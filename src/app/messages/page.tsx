@@ -10,6 +10,7 @@ import { conversations as seedConversations } from "@/lib/mock-data";
 import { v4 as uuidv4 } from "uuid";
 import { Textarea } from "@/components/Textarea";
 import { Button } from "@/components/Button";
+import { MessageCircle } from "lucide-react";
 
 // Define the shape of a conversation and message for type safety.
 interface Conversation {
