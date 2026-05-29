@@ -1,0 +1,17 @@
+version: 1.0
+runtime: nodejs22
+build:
+  commands:
+    build:
+      - npm install
+      - npx prisma generate
+      - npm run build
+run:
+  command: sh -c "npx prisma db push && npm run start"
+  network:
+    port: 3000
+  env:
+    - name: NODE_ENV
+      value: production
+    - name: APP_ENV
+      value: production

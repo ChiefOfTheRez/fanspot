@@ -1,0 +1,71 @@
+openapi: 3.0.3
+info:
+  title: FanSpot Final Draft API
+  version: 1.0.0-final-draft
+  description: Mock-ready API contract for the FanSpot final-draft MVP scaffold.
+servers:
+  - url: http://localhost:3000
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      responses:
+        '200': { description: OK }
+  /api/status:
+    get:
+      summary: Launch readiness status
+      responses:
+        '200': { description: OK }
+  /api/auth/register:
+    post:
+      summary: Validate registration payload
+      responses:
+        '201': { description: Accepted }
+  /api/creators:
+    get:
+      summary: List creators
+      responses:
+        '200': { description: OK }
+  /api/creators/{username}:
+    get:
+      summary: Get creator profile and posts
+      parameters:
+        - in: path
+          name: username
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /api/posts:
+    get:
+      summary: List posts
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Validate post creation
+      responses:
+        '201': { description: Created }
+  /api/reports:
+    post:
+      summary: Create report placeholder
+      responses:
+        '201': { description: Created }
+  /api/studio/dashboard:
+    get:
+      summary: Creator dashboard data
+      responses:
+        '200': { description: OK }
+  /api/admin/dashboard:
+    get:
+      summary: Admin dashboard data
+      responses:
+        '200': { description: OK }
+  /api/support/tickets:
+    get:
+      summary: List support tickets placeholder
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Validate support ticket creation
+      responses:
+        '201': { description: Created }

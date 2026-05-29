@@ -1,0 +1,22 @@
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: fanspot
+      POSTGRES_PASSWORD: fanspot_dev_password
+      POSTGRES_DB: fanspot
+    volumes:
+      - fanspot_pg:/var/lib/postgresql/data
+volumes:
+  fanspot_pg:
