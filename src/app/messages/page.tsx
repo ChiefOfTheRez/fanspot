@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -7,7 +7,6 @@ import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { Shell } from "@/components/Shell";
 import { conversations as seedConversations } from "@/lib/mock-data";
-import { v4 as uuidv4 } from "uuid";
 import { Textarea } from "@/components/Textarea";
 import { Button } from "@/components/Button";
 import { MessageCircle } from "lucide-react";
@@ -76,7 +75,7 @@ export default function MessagesPage() {
       if (!conv) {
         // Create new conversation if not exists
         conv = {
-          id: uuidv4(),
+          id: crypto.randomUUID(),
           name: username.charAt(0).toUpperCase() + username.slice(1),
           handle: `@${username}`,
           lastMessage: "",
@@ -98,7 +97,7 @@ export default function MessagesPage() {
   const handleSend = () => {
     if (!selected || draft.trim() === "") return;
     const newMessage: Message = {
-      id: uuidv4(),
+      id: crypto.randomUUID(),
       from: "fan",
       body: draft.trim(),
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -215,3 +214,4 @@ export default function MessagesPage() {
     </Shell>
   );
 }
+
