@@ -1,14 +1,14 @@
-import { InfoPage } from "@/components/InfoPage";
+﻿import { InfoPage } from "@/components/InfoPage";
 
 export default function Page() {
   return (
     <InfoPage
       eyebrow="FanSpot"
       title="Community guidelines"
-      description="FanSpot should launch with clear, safe, general creator‑platform rules before accepting public users or paid creator activity."
+      description="FanSpot should launch with clear, safe, general creatorâ€‘platform rules before accepting public users or paid creator activity."
       cards={[
         { title: "Respectful conduct", body: "No harassment, impersonation, spam, threats, or manipulation of platform systems." },
-        { title: "Safe content", body: "The FanSpot is structured as a general creator platform and does not include adult‑content features." },
+        { title: "Safe content", body: "The FanSpot is structured as a general creator platform and does not include adultâ€‘content features." },
         { title: "Report and review", body: "Fans can report content; moderators review and document decisions in audit logs." },
       ]}
     >
@@ -20,7 +20,7 @@ export default function Page() {
         </p>
         <ul className="list-disc space-y-2 pl-5 text-sm leading-6 text-slate-300">
           <li>Be kind and respectful when engaging with creators and other fans. Personal attacks and hateful language will not be tolerated.</li>
-          <li>Share only content that you have the right to post. Do not upload material that infringes on someone else's rights.</li>
+          <li>Share only content that you have the right to post. Do not upload material that infringes on someone else&apos;s rights.</li>
           <li>Keep your communications appropriate for all audiences. Content with nudity, violence, or illegal activity is prohibited.</li>
           <li>Use the report tools to flag any content or behavior that violates these guidelines. Our moderation team will review and act accordingly.</li>
         </ul>
@@ -28,3 +28,4 @@ export default function Page() {
     </InfoPage>
   );
 }
+
