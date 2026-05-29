@@ -14,6 +14,11 @@ export async function POST() {
     if (!user) return fail("User not found", 404);
     if (user.emailVerified) return ok({ sent: false, reason: "Email already verified." });
 
+    if (process.env.EMAIL_PROVIDER === "console" || process.env.FANSPOT_TEST_MODE === "true") {
+      await prisma.user.update({ where: { id: session.user.id }, data: { emailVerified: new Date() } });
+      return ok({ sent: false, verified: true, reason: "Email verified automatically for the test environment." });
+    }
+
     const token = crypto.randomBytes(32).toString("hex");
     const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
     await prisma.verificationToken.deleteMany({ where: { identifier: user.email } });

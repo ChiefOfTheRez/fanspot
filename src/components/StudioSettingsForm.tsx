@@ -75,9 +75,6 @@ export function StudioSettingsForm({ initial, posts, tiers }: { initial: Creator
             <div className={`rounded-[1.5rem] border p-4 ${selectedTheme.panelClass}`}>
               <h2 className="text-2xl font-black text-white">{form.displayName || "Creator name"}</h2>
               <p className="text-sm text-slate-300">@{form.username || "username"} · {form.category || "Category"}</p>
-              <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-white">
-                {(form.badgeText || "Verified Creator,Founding Member").split(",").filter(Boolean).slice(0, 4).map((badge) => <span key={badge} className="rounded-full bg-white/10 px-3 py-1">{badge.trim()}</span>)}
-              </div>
             </div>
           </div>
         </div>
@@ -124,7 +121,7 @@ export function StudioSettingsForm({ initial, posts, tiers }: { initial: Creator
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <Field label="Badges, comma separated" value={form.badgeText ?? ""} onChange={(value) => update("badgeText", value)} placeholder="Verified Creator, Founding Member" />
+        <Field label="Creator profile note" value={form.badgeText ?? ""} onChange={(value) => update("badgeText", value)} placeholder="Short creator note" />
         <label className="block">
           <span className="text-sm font-bold text-white">Background blur</span>
           <input type="range" min="0" max="32" value={form.backgroundBlur} onChange={(event) => update("backgroundBlur", Number(event.target.value))} className="mt-4 w-full" />

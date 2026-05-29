@@ -228,7 +228,7 @@ export const notifications: NotificationItem[] = [
     body: "Thanks for joining FanSpot. Start exploring creators today.",
     createdAt: new Date().toLocaleDateString("en", { month: "short", day: "numeric" }),
     read: false,
-    href: "/feed"
+    href: "/discover"
   },
   {
     id: "notif2",
@@ -236,7 +236,7 @@ export const notifications: NotificationItem[] = [
     body: "Snowy just shared a new art piece.",
     createdAt: new Date().toLocaleDateString("en", { month: "short", day: "numeric" }),
     read: false,
-    href: "/feed"
+    href: "/post/post1"
   }
 ];
 export const ledger: LedgerItem[] = [];

@@ -43,7 +43,7 @@ export function AccountSettingsPanel({ initial }: { initial: { displayName: stri
       setError(payload?.error || "Could not send verification email.");
       return;
     }
-    setMessage("Verification email sent. For local testing, check the terminal running npm run dev.");
+    setMessage(payload?.data?.verified ? "Email verified for this test environment. Refresh the page to remove the banner." : "Verification email sent. For local testing, check the terminal running npm run dev.");
   }
 
   return (
@@ -52,7 +52,7 @@ export function AccountSettingsPanel({ initial }: { initial: { displayName: stri
         <p className="font-bold text-white">Email</p>
         <p className="mt-1">{initial.email}</p>
         <p className="mt-2 text-xs text-slate-500">Status: {initial.emailVerified ? "Verified" : "Not verified"}</p>
-        {!initial.emailVerified ? <button type="button" onClick={() => void resendVerification()} disabled={resending} className="mt-3 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white hover:bg-blue-500 disabled:opacity-50">{resending ? "Sending..." : "Resend verification email"}</button> : null}
+        {!initial.emailVerified ? <button type="button" onClick={() => void resendVerification()} disabled={resending} className="mt-3 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white hover:bg-blue-500 disabled:opacity-50">{resending ? "Sending..." : "Verify / resend email"}</button> : null}
       </div>
       <label className="block text-sm font-bold text-slate-300">Display name<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} className="mt-2 w-full rounded-2xl border border-slate-800 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-blue-500" /></label>
       <label className="block text-sm font-bold text-slate-300">Username<input value={username} onChange={(event) => setUsername(event.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))} className="mt-2 w-full rounded-2xl border border-slate-800 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-blue-500" /></label>

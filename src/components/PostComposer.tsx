@@ -2,7 +2,7 @@
 
 import { Image as ImageIcon, Lock, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
 import { Card } from "@/components/Card";
 
 export function PostComposer() {
@@ -11,6 +11,12 @@ export function PostComposer() {
   const [visibility, setVisibility] = useState<"PUBLIC" | "FOLLOWERS" | "SUPPORTERS">("PUBLIC");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mediaName, setMediaName] = useState("");
+
+  function onMediaSelect(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    setMediaName(file ? file.name : "");
+  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -20,7 +26,7 @@ export function PostComposer() {
     const response = await fetch("/api/posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body, visibility })
+      body: JSON.stringify({ body: mediaName ? `${body}\n\nAttached media: ${mediaName}` : body, visibility })
     });
 
     setLoading(false);
@@ -50,7 +56,7 @@ export function PostComposer() {
           />
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-2 text-xs text-slate-400">
-              <button type="button" className="inline-flex cursor-not-allowed items-center gap-2 rounded-2xl border border-slate-800 px-3 py-2 opacity-70"><ImageIcon className="h-4 w-4" aria-hidden="true" /> Media soon</button>
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-slate-800 px-3 py-2 hover:bg-white/5"><ImageIcon className="h-4 w-4" aria-hidden="true" /> {mediaName || "Attach media"}<input type="file" accept="image/*,video/*" onChange={onMediaSelect} className="sr-only" /></label>
               <label className="inline-flex items-center gap-2 rounded-2xl border border-slate-800 px-3 py-2 hover:bg-white/5">
                 <Lock className="h-4 w-4" aria-hidden="true" />
                 <select className="bg-transparent text-xs font-bold outline-none" value={visibility} onChange={(event) => setVisibility(event.target.value as "PUBLIC" | "FOLLOWERS" | "SUPPORTERS")}>

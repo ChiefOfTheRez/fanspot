@@ -4,6 +4,7 @@ import { Badge } from "@/components/Badge";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { FeedPostCard } from "@/components/FeedPostCard";
+import { FollowingList } from "@/components/FollowingList";
 import { RightRail } from "@/components/RightRail";
 import { Shell } from "@/components/Shell";
 import { authOptions } from "@/lib/auth";
@@ -69,12 +70,13 @@ export default async function ProfilePage() {
                   {user?.websiteUrl ? <span className="inline-flex items-center gap-2"><LinkIcon className="h-4 w-4" /> {user.websiteUrl}</span> : null}
                 </div>
               </div>
-              <button className="inline-flex cursor-not-allowed items-center gap-2 rounded-2xl border border-slate-800 px-4 py-3 text-sm font-bold text-slate-400">
-                <Edit3 className="h-4 w-4" /> Edit profile soon
-              </button>
+              <a href="/settings" className="inline-flex items-center gap-2 rounded-2xl border border-slate-800 px-4 py-3 text-sm font-bold text-slate-300 hover:border-blue-500 hover:text-white">
+                <Edit3 className="h-4 w-4" /> Edit profile
+              </a>
             </div>
           </div>
         </Card>
+        <FollowingList />
         <div>
           <h2 className="mb-4 text-xl font-black text-white">Your posts</h2>
           <div className="space-y-5">

@@ -1,4 +1,4 @@
-﻿import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
@@ -18,7 +18,7 @@ export function Button({ children, tone = "blue", className = "", ...props }: Bu
   return (
     <button
       {...props}
-      className={`rounded-2xl px-5 py-3 text-sm font-bold text-white transition ${toneClass} ${className}`}
+      className={`rounded-2xl px-5 py-3 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${toneClass} ${className}`}
     >
       {children}
     </button>

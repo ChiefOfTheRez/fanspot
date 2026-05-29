@@ -8,6 +8,7 @@ import { RightRail } from "@/components/RightRail";
 import { Shell } from "@/components/Shell";
 import { viewerCanAccessPost } from "@/lib/access";
 import { authOptions } from "@/lib/auth";
+import { feedPosts } from "@/lib/mock-data";
 import { prisma } from "@/lib/prisma";
 import type { FeedPost } from "@/lib/mock-data";
 
@@ -27,7 +28,20 @@ export default async function PostPage({ params }: PageProps) {
     }
   });
 
-  if (!post || post.status !== "APPROVED") notFound();
+  if (!post) {
+    const mockPost = feedPosts.find((item) => item.id === id);
+    if (!mockPost) notFound();
+    return (
+      <Shell active="/feed" rightRail={<RightRail />}>
+        <div className="space-y-5 pb-24">
+          <PageHero title={mockPost.title} description="Single-post detail page." />
+          <FeedPostCard post={mockPost} />
+        </div>
+      </Shell>
+    );
+  }
+
+  if (post.status !== "APPROVED") notFound();
   const canAccess = await viewerCanAccessPost({ viewerId: session?.user?.id, postId: id, authorId: post.authorId, visibility: post.visibility });
   if (!canAccess) notFound();
 
@@ -52,10 +66,10 @@ export default async function PostPage({ params }: PageProps) {
   return (
     <Shell active="/feed" rightRail={<RightRail />}>
       <div className="space-y-5 pb-24">
-        <PageHero eyebrow="Post" title={mapped.title} description="Single-post detail page with access-controlled commenting." />
+        <PageHero title={mapped.title} description="Single-post detail page with access-controlled commenting." />
         <FeedPostCard post={mapped} />
         <Card>
-          <h2 className="text-xl font-black text-white">Comments</h2>
+          <h2 className="text-xl font-black text-white">Server comments</h2>
           <div className="mt-5"><CommentForm postId={post.id} disabledReason={disabledReason} /></div>
           <div className="mt-6 space-y-3">
             {post.comments.length ? post.comments.map((comment) => (
@@ -63,7 +77,7 @@ export default async function PostPage({ params }: PageProps) {
                 <p className="text-sm font-black text-white">{comment.author.displayName} <span className="font-normal text-slate-500">@{comment.author.username}</span></p>
                 <p className="mt-2 text-sm leading-6 text-slate-300">{comment.body}</p>
               </div>
-            )) : <p className="text-sm text-slate-400">No comments yet.</p>}
+            )) : <p className="text-sm text-slate-400">No server comments yet.</p>}
           </div>
         </Card>
       </div>
