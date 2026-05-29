@@ -15,7 +15,8 @@ export default function SupportPage() {
           <h2 className="text-xl font-black text-white">Open a support ticket</h2>
           <div className="mt-5 grid gap-4 md:grid-cols-2"><TextField label="Subject" placeholder="What do you need help with?" /><TextField label="Account email" placeholder="you@example.com" /></div>
           <div className="mt-4"><TextAreaField label="Message" placeholder="Describe the issue..." /></div>
-          <button className="mt-5 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-500">Save ticket draft</button>
+          {/* Changed label to indicate submission rather than saving a draft */}
+          <button className="mt-5 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-500">Send support ticket</button>
         </Card>
       </div>
     </Shell>

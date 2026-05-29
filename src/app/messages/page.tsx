@@ -9,7 +9,8 @@ import { conversations } from "@/lib/mock-data";
 
 export default function MessagesPage() {
   return (
-    <Shell active="/messages" rightRail={<RightRail />}>
+    // Remove right rail from the messages page to focus on conversations.
+    <Shell active="/messages">
       <div className="space-y-5 pb-24">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-white">Messages</h1>

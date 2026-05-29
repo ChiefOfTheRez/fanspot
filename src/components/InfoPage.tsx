@@ -16,9 +16,9 @@ export function InfoPage({ active = "/support", eyebrow, title, description, chi
           <section>
             <SectionHeader title="What is included" />
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {cards.map((card) => (
+            {cards.map((card) => (
                 <Card key={card.title}>
-                  {card.badge ? <Badge tone="blue">{card.badge}</Badge> : null}
+                  {/* Removed badge display for guideline cards to reduce visual clutter */}
                   <h3 className="mt-4 text-lg font-black text-white">{card.title}</h3>
                   <p className="mt-3 text-sm leading-6 text-slate-400">{card.body}</p>
                 </Card>

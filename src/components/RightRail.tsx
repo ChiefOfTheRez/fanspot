@@ -26,19 +26,7 @@ export function RightRail() {
         </div>
       </Card>
 
-      <Card>
-        <Badge tone="green">Safety first</Badge>
-        <h3 className="mt-4 font-black text-white">Community controls</h3>
-        <p className="mt-3 text-sm leading-6 text-slate-400">FanSpot includes account protection, reporting, and moderation workflows to help keep the community healthy.</p>
-      </Card>
-
-      <Card className="bg-blue-600/10">
-        <h3 className="font-black text-white">Create your space</h3>
-        <p className="mt-2 text-sm leading-6 text-slate-300">Apply for creator tools when you are ready to publish, manage posts, and build a community.</p>
-        <Link href="/creator/apply" className="mt-5 inline-flex rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950">
-          Apply as creator
-        </Link>
-      </Card>
+      {/* Removed safety and create-your-space cards. Only recommended creators are shown on the right rail. */}
     </div>
   );
 }

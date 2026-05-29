@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Bell, CheckCircle2, Lock, MessageCircle, Pin, Sparkles, Star, Users } from "lucide-react";
 import { Badge } from "@/components/Badge";
 import { ButtonLink } from "@/components/ButtonLink";
+import Link from "next/link";
 import { Card } from "@/components/Card";
 import { FeedPostCard } from "@/components/FeedPostCard";
 import { RightRail } from "@/components/RightRail";
@@ -83,7 +84,8 @@ export default async function CreatorProfilePage({ params }: PageProps) {
   const posts = creator.posts.filter((post) => post.id !== creator.pinnedPost?.id).map(mapPost);
 
   return (
-    <Shell active="/discover" rightRail={<RightRail />}>
+    // Remove right rail on creator profiles. We display creator-specific information only.
+    <Shell active="/discover">
       <div className={`relative overflow-hidden rounded-[2.5rem] border border-slate-800 bg-gradient-to-br ${theme.backgroundClass} p-4 shadow-2xl md:p-6`}>
         {profile.backgroundUrl ? <img src={profile.backgroundUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-35" style={{ filter: `blur(${profile.backgroundBlur}px)` }} /> : null}
         <div className="absolute inset-0 bg-black/35" />
@@ -116,10 +118,10 @@ export default async function CreatorProfilePage({ params }: PageProps) {
                   {badges.map((badge) => <Badge key={badge} tone="yellow"><Sparkles className="mr-1 h-3 w-3" aria-hidden="true" /> {badge}</Badge>)}
                 </div>
               </div>
-              <div className="space-y-3 rounded-[1.5rem] border border-white/10 bg-black/25 p-4">
+                <div className="space-y-3 rounded-[1.5rem] border border-white/10 bg-black/25 p-4">
                 <div className="flex flex-wrap gap-2">
-                  <button className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-700 px-4 py-3 text-sm font-bold text-white hover:bg-white/5"><Bell className="h-4 w-4" aria-hidden="true" /> Follow</button>
-                  <button className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500"><Star className="h-4 w-4" aria-hidden="true" /> Support</button>
+                  <Link href={`/api/follows?creator=${user.username}`} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-700 px-4 py-3 text-sm font-bold text-white hover:bg-white/5"><Bell className="h-4 w-4" aria-hidden="true" /> Follow</Link>
+                  <Link href={`/creator/${user.username}/support`} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500"><Star className="h-4 w-4" aria-hidden="true" /> Support</Link>
                 </div>
                 <ButtonLink href="/messages" variant="secondary"><MessageCircle className="mr-2 h-4 w-4" aria-hidden="true" /> Message</ButtonLink>
               </div>
