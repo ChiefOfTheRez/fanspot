@@ -5,54 +5,59 @@ import { Bookmark, FolderPlus, Plus, Trash2 } from "lucide-react";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { FeedPostCard } from "@/components/FeedPostCard";
-import { feedPosts } from "@/lib/mock-data";
+import { feedPosts, type FeedPost } from "@/lib/mock-data";
+import { readJson, scopedKey, useAccountStoragePrefix, writeJson } from "@/lib/account-storage";
 
 type Groups = Record<string, string[]>;
+type SavedBookmarkPost = FeedPost & { savedAt?: string };
 
-function readJson<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) as T : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeJson(key: string, value: unknown) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Ignore storage errors in local demo storage.
-  }
-}
+const defaultGroups: Groups = { Favorites: [], "Cosplay ideas": [], "Creator research": [] };
 
 export function BookmarksClient() {
+  const accountPrefix = useAccountStoragePrefix();
+  const savedIdsKey = scopedKey(accountPrefix, "bookmarked-ids");
+  const savedPostsKey = scopedKey(accountPrefix, "bookmarked-posts");
+  const groupsKey = scopedKey(accountPrefix, "bookmark-groups");
+
   const [savedIds, setSavedIds] = useState<string[]>([]);
-  const [groups, setGroups] = useState<Groups>({ Favorites: [], "Cosplay ideas": [], "Creator research": [] });
+  const [savedSnapshots, setSavedSnapshots] = useState<SavedBookmarkPost[]>([]);
+  const [groups, setGroups] = useState<Groups>(defaultGroups);
   const [selectedGroup, setSelectedGroup] = useState("All bookmarks");
   const [newGroup, setNewGroup] = useState("");
 
   function load() {
-    setSavedIds(readJson<string[]>("fanspot-bookmarked-ids", []));
-    setGroups(readJson<Groups>("fanspot-bookmark-groups", { Favorites: [], "Cosplay ideas": [], "Creator research": [] }));
+    const ids = readJson<string[]>(savedIdsKey, []);
+    setSavedIds(ids);
+    setSavedSnapshots(readJson<SavedBookmarkPost[]>(savedPostsKey, []));
+    setGroups(readJson<Groups>(groupsKey, defaultGroups));
   }
 
   useEffect(() => {
     load();
     window.addEventListener("fanspot-bookmarks-updated", load);
-    return () => window.removeEventListener("fanspot-bookmarks-updated", load);
-  }, []);
+    window.addEventListener("storage", load);
+    return () => {
+      window.removeEventListener("fanspot-bookmarks-updated", load);
+      window.removeEventListener("storage", load);
+    };
+  }, [savedIdsKey, savedPostsKey, groupsKey]);
 
-  const savedPosts = useMemo(() => feedPosts.filter((post) => savedIds.includes(post.id)), [savedIds]);
-  const visibleIds = selectedGroup === "All bookmarks" ? savedIds : groups[selectedGroup] ?? [];
-  const visiblePosts = useMemo(() => feedPosts.filter((post) => visibleIds.includes(post.id)), [visibleIds]);
+  const allSavedPosts = useMemo(() => {
+    const fromSeeds = feedPosts.filter((post) => savedIds.includes(post.id));
+    const byId = new Map<string, FeedPost>();
+    [...savedSnapshots, ...fromSeeds].forEach((post) => byId.set(post.id, post));
+    return Array.from(byId.values()).filter((post) => savedIds.includes(post.id));
+  }, [savedIds, savedSnapshots]);
+
+  const visibleIds = useMemo(() => selectedGroup === "All bookmarks" ? savedIds : groups[selectedGroup] ?? [], [selectedGroup, savedIds, groups]);
+  const visiblePosts = useMemo(() => allSavedPosts.filter((post) => visibleIds.includes(post.id)), [allSavedPosts, visibleIds]);
 
   function createGroup() {
     const name = newGroup.trim();
     if (!name || groups[name]) return;
     const next = { ...groups, [name]: [] };
     setGroups(next);
-    writeJson("fanspot-bookmark-groups", next);
+    writeJson(groupsKey, next);
     setSelectedGroup(name);
     setNewGroup("");
   }
@@ -61,7 +66,7 @@ export function BookmarksClient() {
     const next = { ...groups };
     delete next[name];
     setGroups(next);
-    writeJson("fanspot-bookmark-groups", next);
+    writeJson(groupsKey, next);
     setSelectedGroup("All bookmarks");
   }
 
@@ -70,15 +75,15 @@ export function BookmarksClient() {
     const nextIds = current.includes(postId) ? current.filter((id) => id !== postId) : [...current, postId];
     const next = { ...groups, [groupName]: nextIds };
     setGroups(next);
-    writeJson("fanspot-bookmark-groups", next);
+    writeJson(groupsKey, next);
   }
 
   return (
     <div className="space-y-5 pb-24">
       <section className="rounded-[2rem] border border-slate-800 bg-slate-950/70 p-6 md:p-8">
         <h1 className="text-3xl font-black tracking-tight text-white md:text-5xl">Bookmarks</h1>
-        <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300">Save posts and organize them into custom groups.</p>
-        <p className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-slate-300"><Bookmark className="h-4 w-4" /> {savedPosts.length} saved posts</p>
+        <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300">Save posts and organize them into custom groups. Bookmarks are separated per logged-in account.</p>
+        <p className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-slate-300"><Bookmark className="h-4 w-4" /> {allSavedPosts.length} saved posts</p>
       </section>
 
       <section className="rounded-[2rem] border border-slate-800 bg-slate-950/70 p-5">
@@ -108,11 +113,11 @@ export function BookmarksClient() {
         </div>
       </section>
 
-      {selectedGroup !== "All bookmarks" && savedPosts.length ? (
+      {selectedGroup !== "All bookmarks" && allSavedPosts.length ? (
         <Card>
           <h2 className="text-lg font-black text-white">Add saved posts to “{selectedGroup}”</h2>
           <div className="mt-4 flex flex-wrap gap-2">
-            {savedPosts.map((post) => {
+            {allSavedPosts.map((post) => {
               const inGroup = (groups[selectedGroup] ?? []).includes(post.id);
               return (
                 <button key={post.id} onClick={() => togglePostInGroup(post.id, selectedGroup)} className={`rounded-2xl border px-4 py-2 text-sm font-bold ${inGroup ? "border-blue-500 bg-blue-600/20 text-white" : "border-slate-800 text-slate-300 hover:border-blue-500 hover:text-white"}`}>

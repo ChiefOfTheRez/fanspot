@@ -3,36 +3,24 @@
 import Link from "next/link";
 import { Bookmark, Flag, Heart, MessageCircle, MoreHorizontal, Send, Share2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Avatar } from "@/components/Avatar";
 import { Card } from "@/components/Card";
 import type { FeedPost } from "@/lib/mock-data";
 import { formatCompact } from "@/lib/format";
+import { readJson, scopedKey, useAccountStoragePrefix, writeJson } from "@/lib/account-storage";
 
 type SavedComment = { id: string; body: string; createdAt: string; author: string };
+type SavedBookmarkPost = FeedPost & { savedAt: string };
 
 function uid() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function readJson<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) as T : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeJson(key: string, value: unknown) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Ignore storage errors in the test build.
-  }
-}
-
-export function FeedPostCard({ post }: { post: FeedPost }) {
+export function FeedPostCard({ post, showComments = false }: { post: FeedPost; showComments?: boolean }) {
+  const { data: session } = useSession();
+  const accountPrefix = useAccountStoragePrefix();
   const [likeCount, setLikeCount] = useState(post.likes);
   const [bookmarkCount, setBookmarkCount] = useState(post.bookmarks);
   const [liked, setLiked] = useState(false);
@@ -45,12 +33,15 @@ export function FeedPostCard({ post }: { post: FeedPost }) {
   const [notice, setNotice] = useState("");
   const [hidden, setHidden] = useState(false);
 
-  const commentsKey = `fanspot-comments-${post.id}`;
-  const likedKey = `fanspot-liked-${post.id}`;
-  const bookmarkedKey = `fanspot-bookmarked-${post.id}`;
-  const likeCountKey = `fanspot-like-count-${post.id}`;
-  const bookmarkCountKey = `fanspot-bookmark-count-${post.id}`;
-  const hiddenKey = `fanspot-hidden-post-${post.id}`;
+  const commentsKey = scopedKey(accountPrefix, `comments-${post.id}`);
+  const likedKey = scopedKey(accountPrefix, `liked-${post.id}`);
+  const bookmarkedKey = scopedKey(accountPrefix, `bookmarked-${post.id}`);
+  const likeCountKey = scopedKey(accountPrefix, `like-count-${post.id}`);
+  const bookmarkCountKey = scopedKey(accountPrefix, `bookmark-count-${post.id}`);
+  const hiddenKey = scopedKey(accountPrefix, `hidden-post-${post.id}`);
+  const bookmarkIdsKey = scopedKey(accountPrefix, "bookmarked-ids");
+  const bookmarkPostsKey = scopedKey(accountPrefix, "bookmarked-posts");
+  const reportsKey = scopedKey(accountPrefix, "post-reports");
 
   useEffect(() => {
     try {
@@ -59,20 +50,26 @@ export function FeedPostCard({ post }: { post: FeedPost }) {
       setLiked(localStorage.getItem(likedKey) === "true");
       setBookmarked(localStorage.getItem(bookmarkedKey) === "true");
       setHidden(localStorage.getItem(hiddenKey) === "true");
-      if (likeCountStored && !Number.isNaN(Number(likeCountStored))) setLikeCount(Number(likeCountStored));
-      if (bookmarkCountStored && !Number.isNaN(Number(bookmarkCountStored))) setBookmarkCount(Number(bookmarkCountStored));
+      setLikeCount(likeCountStored && !Number.isNaN(Number(likeCountStored)) ? Number(likeCountStored) : post.likes);
+      setBookmarkCount(bookmarkCountStored && !Number.isNaN(Number(bookmarkCountStored)) ? Number(bookmarkCountStored) : post.bookmarks);
       setComments(readJson<SavedComment[]>(commentsKey, []));
     } catch {
       // Ignore localStorage errors.
     }
-  }, [commentsKey, hiddenKey, likeCountKey, bookmarkCountKey, likedKey, bookmarkedKey]);
+  }, [commentsKey, hiddenKey, likeCountKey, bookmarkCountKey, likedKey, bookmarkedKey, post.likes, post.bookmarks]);
 
   const totalComments = useMemo(() => post.comments + comments.length, [post.comments, comments.length]);
 
-  function saveBookmarkIds(nextBookmarked: boolean) {
-    const ids = readJson<string[]>("fanspot-bookmarked-ids", []);
+  function saveBookmark(nextBookmarked: boolean) {
+    const ids = readJson<string[]>(bookmarkIdsKey, []);
+    const posts = readJson<SavedBookmarkPost[]>(bookmarkPostsKey, []);
     const nextIds = nextBookmarked ? Array.from(new Set([...ids, post.id])) : ids.filter((id) => id !== post.id);
-    writeJson("fanspot-bookmarked-ids", nextIds);
+    const snapshot: SavedBookmarkPost = { ...post, savedAt: new Date().toISOString() };
+    const nextPosts = nextBookmarked
+      ? [snapshot, ...posts.filter((item) => item.id !== post.id)]
+      : posts.filter((item) => item.id !== post.id);
+    writeJson(bookmarkIdsKey, nextIds);
+    writeJson(bookmarkPostsKey, nextPosts);
   }
 
   function handleLike() {
@@ -98,7 +95,7 @@ export function FeedPostCard({ post }: { post: FeedPost }) {
       if (nextBookmarked) localStorage.setItem(bookmarkedKey, "true");
       else localStorage.removeItem(bookmarkedKey);
       localStorage.setItem(bookmarkCountKey, String(nextCount));
-      saveBookmarkIds(nextBookmarked);
+      saveBookmark(nextBookmarked);
       window.dispatchEvent(new Event("fanspot-bookmarks-updated"));
     } catch {
       // Ignore storage errors.
@@ -111,7 +108,7 @@ export function FeedPostCard({ post }: { post: FeedPost }) {
     const nextComment: SavedComment = {
       id: uid(),
       body,
-      author: "You",
+      author: session?.user?.name || session?.user?.username || "You",
       createdAt: new Date().toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
     };
     const nextComments = [...comments, nextComment];
@@ -132,9 +129,9 @@ export function FeedPostCard({ post }: { post: FeedPost }) {
   }
 
   function submitReport() {
-    const reports = readJson<Array<{ id: string; postId: string; reason: string; createdAt: string }>>("fanspot-post-reports", []);
+    const reports = readJson<Array<{ id: string; postId: string; reason: string; createdAt: string }>>(reportsKey, []);
     const reason = reportReason.trim() || "No reason provided";
-    writeJson("fanspot-post-reports", [...reports, { id: uid(), postId: post.id, reason, createdAt: new Date().toISOString() }]);
+    writeJson(reportsKey, [...reports, { id: uid(), postId: post.id, reason, createdAt: new Date().toISOString() }]);
     setReportReason("");
     setReportOpen(false);
     setMenuOpen(false);
@@ -197,9 +194,9 @@ export function FeedPostCard({ post }: { post: FeedPost }) {
           <Heart className={`h-4 w-4 ${liked ? "fill-red-500 text-red-500" : ""}`} />
           {formatCompact(likeCount)}
         </button>
-        <a href={`#comment-${post.id}`} className="flex items-center gap-2 hover:text-white">
+        <Link href={`/post/${post.id}#comments`} className="flex items-center gap-2 hover:text-white">
           <MessageCircle className="h-4 w-4" />{formatCompact(totalComments)}
-        </a>
+        </Link>
         <button onClick={handleBookmark} className="flex items-center gap-2 hover:text-white" aria-pressed={bookmarked}>
           <Bookmark className={`h-4 w-4 ${bookmarked ? "fill-blue-300 text-blue-300" : ""}`} />
           {formatCompact(bookmarkCount)}
@@ -219,21 +216,23 @@ export function FeedPostCard({ post }: { post: FeedPost }) {
         </div>
       ) : null}
 
-      <div id={`comment-${post.id}`} className="mt-5 rounded-2xl border border-slate-800 bg-black/20 p-4">
-        <p className="text-sm font-black text-white">Comments</p>
-        <div className="mt-3 space-y-3">
-          {comments.length ? comments.map((comment) => (
-            <div key={comment.id} className="rounded-2xl bg-white/[0.04] p-3">
-              <p className="text-xs font-bold text-blue-200">{comment.author} <span className="font-normal text-slate-500">{comment.createdAt}</span></p>
-              <p className="mt-1 text-sm text-slate-200">{comment.body}</p>
-            </div>
-          )) : <p className="text-sm text-slate-500">No local comments yet.</p>}
+      {showComments ? (
+        <div id="comments" className="mt-5 rounded-2xl border border-slate-800 bg-black/20 p-4">
+          <p className="text-sm font-black text-white">Comments</p>
+          <div className="mt-3 space-y-3">
+            {comments.length ? comments.map((comment) => (
+              <div key={comment.id} className="rounded-2xl bg-white/[0.04] p-3">
+                <p className="text-xs font-bold text-blue-200">{comment.author} <span className="font-normal text-slate-500">{comment.createdAt}</span></p>
+                <p className="mt-1 text-sm text-slate-200">{comment.body}</p>
+              </div>
+            )) : <p className="text-sm text-slate-500">No local comments yet.</p>}
+          </div>
+          <div className="mt-4 flex gap-2">
+            <input value={commentDraft} onChange={(event) => setCommentDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitComment(); }} placeholder="Write a comment..." className="min-w-0 flex-1 rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-500" />
+            <button onClick={submitComment} className="rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white hover:bg-blue-500" aria-label="Send comment"><Send className="h-4 w-4" /></button>
+          </div>
         </div>
-        <div className="mt-4 flex gap-2">
-          <input value={commentDraft} onChange={(event) => setCommentDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitComment(); }} placeholder="Write a comment..." className="min-w-0 flex-1 rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-500" />
-          <button onClick={submitComment} className="rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white hover:bg-blue-500" aria-label="Send comment"><Send className="h-4 w-4" /></button>
-        </div>
-      </div>
+      ) : null}
     </Card>
   );
 }

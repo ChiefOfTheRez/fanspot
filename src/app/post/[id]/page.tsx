@@ -35,7 +35,7 @@ export default async function PostPage({ params }: PageProps) {
       <Shell active="/feed" rightRail={<RightRail />}>
         <div className="space-y-5 pb-24">
           <PageHero title={mockPost.title} description="Single-post detail page." />
-          <FeedPostCard post={mockPost} />
+          <FeedPostCard post={mockPost} showComments />
         </div>
       </Shell>
     );
@@ -67,7 +67,7 @@ export default async function PostPage({ params }: PageProps) {
     <Shell active="/feed" rightRail={<RightRail />}>
       <div className="space-y-5 pb-24">
         <PageHero title={mapped.title} description="Single-post detail page with access-controlled commenting." />
-        <FeedPostCard post={mapped} />
+        <FeedPostCard post={mapped} showComments />
         <Card>
           <h2 className="text-xl font-black text-white">Server comments</h2>
           <div className="mt-5"><CommentForm postId={post.id} disabledReason={disabledReason} /></div>

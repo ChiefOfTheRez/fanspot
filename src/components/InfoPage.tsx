@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Badge } from "@/components/Badge";
 import { Card, SectionHeader } from "@/components/Card";
 import { Shell } from "@/components/Shell";
 

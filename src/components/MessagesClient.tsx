@@ -7,7 +7,7 @@ import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { Textarea } from "@/components/Textarea";
 import { Button } from "@/components/Button";
-import { conversations as seedConversations, threadMessages } from "@/lib/mock-data";
+import { readJson, scopedKey, useAccountStoragePrefix } from "@/lib/account-storage";
 
 type Conversation = { id: string; name: string; handle: string; lastMessage: string; time: string; unread: boolean };
 type Message = { id: string; from: "creator" | "fan"; body: string; time: string };
@@ -17,32 +17,28 @@ function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function readJson<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) as T : fallback;
-  } catch {
-    return fallback;
-  }
-}
+const defaultConversations: Conversation[] = [];
 
 function seedThreads(conversations: Conversation[]) {
   const seeded: Record<string, Message[]> = {};
   conversations.forEach((conversation) => {
-    seeded[conversation.id] = threadMessages.map((message) => ({ ...message, id: `${conversation.id}-${message.id}` })) as Message[];
+    seeded[conversation.id] = [];
   });
   return seeded;
 }
 
 export function MessagesClient() {
-  const [conversations, setConversations] = useState<Conversation[]>(seedConversations);
-  const [messagesByConversation, setMessagesByConversation] = useState<Record<string, Message[]>>(() => seedThreads(seedConversations));
-  const [selected, setSelected] = useState<string | null>(seedConversations[0]?.id ?? null);
+  const accountPrefix = useAccountStoragePrefix();
+  const conversationsKey = scopedKey(accountPrefix, "conversations");
+  const messagesKey = scopedKey(accountPrefix, "messages");
+  const [conversations, setConversations] = useState<Conversation[]>(defaultConversations);
+  const [messagesByConversation, setMessagesByConversation] = useState<Record<string, Message[]>>(() => seedThreads(defaultConversations));
+  const [selected, setSelected] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
 
   useEffect(() => {
-    const storedConversations = readJson<Conversation[]>("fanspot-conversations", seedConversations);
-    const storedMessages = readJson<Record<string, Message[]>>("fanspot-messages", seedThreads(storedConversations));
+    const storedConversations = readJson<Conversation[]>(conversationsKey, defaultConversations);
+    const storedMessages = readJson<Record<string, Message[]>>(messagesKey, seedThreads(storedConversations));
     setConversations(storedConversations);
     setMessagesByConversation(storedMessages);
 
@@ -67,20 +63,20 @@ export function MessagesClient() {
         setConversations(nextConversations);
         setMessagesByConversation(nextMessages);
         setSelected(created.id);
-        localStorage.setItem("fanspot-conversations", JSON.stringify(nextConversations));
-        localStorage.setItem("fanspot-messages", JSON.stringify(nextMessages));
+        localStorage.setItem(conversationsKey, JSON.stringify(nextConversations));
+        localStorage.setItem(messagesKey, JSON.stringify(nextMessages));
       }
     }
-  }, []);
+  }, [conversationsKey, messagesKey]);
 
   useEffect(() => {
     try {
-      localStorage.setItem("fanspot-conversations", JSON.stringify(conversations));
-      localStorage.setItem("fanspot-messages", JSON.stringify(messagesByConversation));
+      localStorage.setItem(conversationsKey, JSON.stringify(conversations));
+      localStorage.setItem(messagesKey, JSON.stringify(messagesByConversation));
     } catch {
       // Ignore storage errors.
     }
-  }, [conversations, messagesByConversation]);
+  }, [conversations, messagesByConversation, conversationsKey, messagesKey]);
 
   const selectedConversation = useMemo(() => conversations.find((conversation) => conversation.id === selected) ?? null, [conversations, selected]);
   const selectedMessages = selected ? messagesByConversation[selected] ?? [] : [];
@@ -107,7 +103,7 @@ export function MessagesClient() {
     <div className="space-y-5 pb-24">
       <div>
         <h1 className="text-3xl font-black tracking-tight text-white">Messages</h1>
-        <p className="mt-2 text-sm text-slate-400">Chat with creators without leaving FanSpot.</p>
+        <p className="mt-2 text-sm text-slate-400">Chat with creators without leaving FanSpot. Conversations are separated per logged-in account.</p>
       </div>
       <div className="grid gap-5 xl:grid-cols-[320px_1fr]">
         <Card className="flex h-[620px] flex-col overflow-hidden p-0">
@@ -115,7 +111,7 @@ export function MessagesClient() {
             <h2 className="font-black text-white">Inbox</h2>
           </div>
           <div className="flex-1 divide-y divide-slate-800 overflow-y-auto">
-            {conversations.map((conversation) => (
+            {conversations.length ? conversations.map((conversation) => (
               <button key={conversation.id} onClick={() => selectConversation(conversation.id)} className={`flex w-full gap-3 p-4 text-left hover:bg-white/5 ${selected === conversation.id ? "bg-white/10" : ""}`}>
                 <Avatar name={conversation.name} />
                 <div className="min-w-0 flex-1">
@@ -128,7 +124,7 @@ export function MessagesClient() {
                 </div>
                 {conversation.unread ? <span className="mt-2 h-2 w-2 rounded-full bg-blue-400" /> : null}
               </button>
-            ))}
+            )) : <p className="p-5 text-sm text-slate-400">No conversations for this account yet. Open a creator profile and click Message.</p>}
           </div>
         </Card>
 

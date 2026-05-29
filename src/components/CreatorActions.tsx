@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Bell, CheckCircle2, DollarSign, Star, X } from "lucide-react";
+import { Bell, CheckCircle2, DollarSign, PartyPopper, Star, X } from "lucide-react";
+import { readJson, scopedKey, useAccountStoragePrefix, writeJson } from "@/lib/account-storage";
 
 const supportTiers = [
   { name: "Bronze", price: "$4.99/mo", description: "Follow updates and support the creator." },
@@ -18,11 +19,13 @@ function readNumber(key: string, fallback: number) {
   }
 }
 
-export default function CreatorActions({ username }: { username: string }) {
-  const followKey = `fanspot-followed-${username}`;
-  const supportKey = `fanspot-supported-${username}`;
-  const tierKey = `fanspot-support-tier-${username}`;
-  const tipsKey = `fanspot-tip-total-${username}`;
+export default function CreatorActions({ username, displayName, headline }: { username: string; displayName?: string; headline?: string }) {
+  const accountPrefix = useAccountStoragePrefix();
+  const followKey = scopedKey(accountPrefix, `followed-${username}`);
+  const followedCreatorsKey = scopedKey(accountPrefix, "followed-creators");
+  const supportKey = scopedKey(accountPrefix, `supported-${username}`);
+  const tierKey = scopedKey(accountPrefix, `support-tier-${username}`);
+  const tipsKey = scopedKey(accountPrefix, `tip-total-${username}`);
   const [followed, setFollowed] = useState(false);
   const [supported, setSupported] = useState(false);
   const [selectedTier, setSelectedTier] = useState("");
@@ -30,6 +33,7 @@ export default function CreatorActions({ username }: { username: string }) {
   const [tipAmount, setTipAmount] = useState("5");
   const [tipTotal, setTipTotal] = useState(0);
   const [notice, setNotice] = useState("");
+  const [celebrate, setCelebrate] = useState(false);
 
   const tipGoal = 250;
   const progress = useMemo(() => Math.min(100, Math.round((tipTotal / tipGoal) * 100)), [tipTotal]);
@@ -40,6 +44,8 @@ export default function CreatorActions({ username }: { username: string }) {
       setSupported(localStorage.getItem(supportKey) === "true");
       setSelectedTier(localStorage.getItem(tierKey) ?? "");
       setTipTotal(readNumber(tipsKey, 80));
+      setNotice("");
+      setCelebrate(false);
     } catch {
       // Ignore storage errors.
     }
@@ -51,6 +57,13 @@ export default function CreatorActions({ username }: { username: string }) {
     try {
       if (next) localStorage.setItem(followKey, "true");
       else localStorage.removeItem(followKey);
+      const current = readJson<Array<{ username: string; displayName: string; headline: string }>>(followedCreatorsKey, []);
+      const snapshot = { username, displayName: displayName || username, headline: headline || "Creator" };
+      const updated = next
+        ? [snapshot, ...current.filter((creator) => creator.username !== username)]
+        : current.filter((creator) => creator.username !== username);
+      writeJson(followedCreatorsKey, updated);
+      window.dispatchEvent(new Event("fanspot-following-updated"));
     } catch {
       // Ignore storage errors.
     }
@@ -75,8 +88,13 @@ export default function CreatorActions({ username }: { username: string }) {
       return;
     }
     const next = tipTotal + amount;
+    const completedGoal = tipTotal < tipGoal && next >= tipGoal;
     setTipTotal(next);
-    setNotice(`Tip sent: $${amount.toFixed(2)}. Payment processor is simulated for this test build.`);
+    setNotice(completedGoal ? `Tip sent: $${amount.toFixed(2)}. Goal finished — confetti unlocked!` : `Tip sent: $${amount.toFixed(2)}. Payment processor is simulated for this test build.`);
+    if (completedGoal) {
+      setCelebrate(true);
+      window.setTimeout(() => setCelebrate(false), 3500);
+    }
     try {
       localStorage.setItem(tipsKey, String(next));
     } catch {
@@ -103,11 +121,21 @@ export default function CreatorActions({ username }: { username: string }) {
 
       {supportOpen ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4">
-          <div className="w-full max-w-2xl rounded-[2rem] border border-slate-800 bg-slate-950 p-6 shadow-2xl shadow-black/60">
+          <div className="relative w-full max-w-2xl overflow-hidden rounded-[2rem] border border-slate-800 bg-slate-950 p-6 shadow-2xl shadow-black/60">
+            {celebrate ? (
+              <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-black/20">
+                <div className="rounded-[2rem] border border-green-400/40 bg-green-500/15 px-6 py-5 text-center shadow-2xl shadow-green-500/20">
+                  <PartyPopper className="mx-auto h-10 w-10 animate-bounce text-green-200" />
+                  <p className="mt-2 text-xl font-black text-white">Tip goal completed!</p>
+                  <p className="mt-1 text-sm text-green-100">🎉 🎊 ✨ Confetti for finishing the jar ✨ 🎊 🎉</p>
+                </div>
+              </div>
+            ) : null}
+
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-black text-white">Support @{username}</h2>
-                <p className="mt-2 text-sm text-slate-400">Choose a membership tier or send a one-time tip.</p>
+                <p className="mt-2 text-sm text-slate-400">Choose a membership tier or send a one-time tip. Saved separately for the current account.</p>
               </div>
               <button onClick={() => setSupportOpen(false)} className="rounded-full p-2 text-slate-400 hover:bg-white/5 hover:text-white"><X className="h-5 w-5" /></button>
             </div>
@@ -132,7 +160,7 @@ export default function CreatorActions({ username }: { username: string }) {
                 <p className="text-sm font-black text-blue-200">${tipTotal} / ${tipGoal}</p>
               </div>
               <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-800">
-                <div className="h-full rounded-full bg-blue-500" style={{ width: `${progress}%` }} />
+                <div className={`h-full rounded-full ${progress >= 100 ? "bg-green-500" : "bg-blue-500"}`} style={{ width: `${progress}%` }} />
               </div>
               <div className="mt-4 flex gap-2">
                 <label className="relative min-w-0 flex-1">
