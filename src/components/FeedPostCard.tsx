@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Bookmark, Heart, MessageCircle, MoreHorizontal } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Badge } from "@/components/Badge";
 import { Card } from "@/components/Card";
@@ -10,18 +10,98 @@ import type { FeedPost } from "@/lib/mock-data";
 import { formatCompact } from "@/lib/format";
 
 export function FeedPostCard({ post }: { post: FeedPost }) {
-  // Enable local interaction for likes, bookmarks and overflow menu. These handlers update state but do not persist changes to the backend.
+  // Local state for likes and bookmarks and whether the current user has liked/bookmarked this post.
   const [likeCount, setLikeCount] = useState(post.likes);
   const [bookmarkCount, setBookmarkCount] = useState(post.bookmarks);
+  const [liked, setLiked] = useState<boolean>(false);
+  const [bookmarked, setBookmarked] = useState<boolean>(false);
+
+  // Load like/bookmark state from localStorage on mount.
+  useEffect(() => {
+    try {
+      const likedKey = `fanspot-liked-${post.id}`;
+      const bookmarkedKey = `fanspot-bookmarked-${post.id}`;
+      const likeCountKey = `fanspot-like-count-${post.id}`;
+      const bookmarkCountKey = `fanspot-bookmark-count-${post.id}`;
+      const likedStored = localStorage.getItem(likedKey);
+      const bookmarkedStored = localStorage.getItem(bookmarkedKey);
+      const likeCountStored = localStorage.getItem(likeCountKey);
+      const bookmarkCountStored = localStorage.getItem(bookmarkCountKey);
+      if (likedStored) {
+        setLiked(true);
+      }
+      if (bookmarkedStored) {
+        setBookmarked(true);
+      }
+      if (likeCountStored && !isNaN(Number(likeCountStored))) {
+        setLikeCount(Number(likeCountStored));
+      }
+      if (bookmarkCountStored && !isNaN(Number(bookmarkCountStored))) {
+        setBookmarkCount(Number(bookmarkCountStored));
+      }
+    } catch (err) {
+      // ignore errors reading localStorage
+    }
+  }, [post.id]);
 
   function handleLike() {
-    setLikeCount((count) => count + 1);
+    try {
+      const likedKey = `fanspot-liked-${post.id}`;
+      const likeCountKey = `fanspot-like-count-${post.id}`;
+      if (liked) {
+        // Toggle off like
+        localStorage.removeItem(likedKey);
+        const newCount = Math.max(0, likeCount - 1);
+        localStorage.setItem(likeCountKey, newCount.toString());
+        setLiked(false);
+        setLikeCount(newCount);
+      } else {
+        localStorage.setItem(likedKey, 'true');
+        const newCount = likeCount + 1;
+        localStorage.setItem(likeCountKey, newCount.toString());
+        setLiked(true);
+        setLikeCount(newCount);
+      }
+    } catch (err) {
+      setLiked(!liked);
+      // Fallback update when localStorage is unavailable
+      setLikeCount((count) => (liked ? Math.max(0, count - 1) : count + 1));
+    }
   }
+
   function handleBookmark() {
-    setBookmarkCount((count) => count + 1);
+    try {
+      const bookmarkedKey = `fanspot-bookmarked-${post.id}`;
+      const bookmarkCountKey = `fanspot-bookmark-count-${post.id}`;
+      if (bookmarked) {
+        localStorage.removeItem(bookmarkedKey);
+        const newCount = Math.max(0, bookmarkCount - 1);
+        localStorage.setItem(bookmarkCountKey, newCount.toString());
+        setBookmarked(false);
+        setBookmarkCount(newCount);
+      } else {
+        localStorage.setItem(bookmarkedKey, 'true');
+        const newCount = bookmarkCount + 1;
+        localStorage.setItem(bookmarkCountKey, newCount.toString());
+        setBookmarked(true);
+        setBookmarkCount(newCount);
+      }
+    } catch (err) {
+      setBookmarked(!bookmarked);
+      // Fallback update when localStorage is unavailable
+      setBookmarkCount((count) => (bookmarked ? Math.max(0, count - 1) : count + 1));
+    }
   }
+
   function handleMore() {
-    alert("More actions coming soon!");
+    alert("More actions like share and report will be added soon.");
+  }
+
+  function handleComment() {
+    const comment = prompt('Enter your comment:');
+    if (comment) {
+      alert('Your comment has been submitted and will appear once comments are implemented.');
+    }
   }
 
   return (
@@ -42,7 +122,8 @@ export function FeedPostCard({ post }: { post: FeedPost }) {
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2">
-        <Badge tone={post.visibility === "Public" ? "blue" : post.visibility === "Followers" ? "green" : "yellow"}>{post.visibility}</Badge>
+        {/* Display the visibility label without decorative tags */}
+        <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-400">{post.visibility}</span>
       </div>
 
       <h3 className="mt-5 text-xl font-black text-white">{post.title}</h3>
@@ -60,9 +141,21 @@ export function FeedPostCard({ post }: { post: FeedPost }) {
       ) : null}
 
       <div className="mt-5 flex items-center gap-4 border-t border-slate-800 pt-4 text-sm text-slate-400">
-        <button onClick={handleLike} className="flex items-center gap-2 hover:text-white"><Heart className="h-4 w-4" />{formatCompact(likeCount)}</button>
-        <button onClick={() => alert('Comment functionality coming soon!')} className="flex items-center gap-2 hover:text-white"><MessageCircle className="h-4 w-4" />{formatCompact(post.comments)}</button>
-        <button onClick={handleBookmark} className="flex items-center gap-2 hover:text-white"><Bookmark className="h-4 w-4" />{formatCompact(bookmarkCount)}</button>
+        <button onClick={handleLike} className="flex items-center gap-2 hover:text-white">
+          <Heart
+            className={`h-4 w-4 ${liked ? 'text-red-500 fill-current' : ''}`}
+          />
+          {formatCompact(likeCount)}
+        </button>
+        <button onClick={handleComment} className="flex items-center gap-2 hover:text-white">
+          <MessageCircle className="h-4 w-4" />{formatCompact(post.comments)}
+        </button>
+        <button onClick={handleBookmark} className="flex items-center gap-2 hover:text-white">
+          <Bookmark
+            className={`h-4 w-4 ${bookmarked ? 'text-yellow-400 fill-current' : ''}`}
+          />
+          {formatCompact(bookmarkCount)}
+        </button>
       </div>
     </Card>
   );

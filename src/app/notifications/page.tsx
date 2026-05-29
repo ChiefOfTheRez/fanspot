@@ -19,7 +19,8 @@ export default function NotificationsPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-black text-white">{item.title}</p>
-                  {!item.read ? <Badge>Unread</Badge> : null}
+                  {/* Display unread status as plain text instead of a badge */}
+                  {!item.read ? <span className="rounded-full bg-blue-600/20 px-2 py-1 text-xs font-medium text-blue-200">Unread</span> : null}
                 </div>
                 <p className="mt-1 text-sm leading-6 text-slate-400">{item.body}</p>
                 <p className="mt-2 text-xs text-slate-500">{item.createdAt}</p>

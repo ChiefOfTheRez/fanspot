@@ -1,8 +1,18 @@
+"use client";
+
+import { useState } from "react";
 import { Badge } from "@/components/Badge";
 import { Card } from "@/components/Card";
 import type { ReportItem } from "@/lib/mock-data";
 
-export function ReportsTable({ reports }: { reports: ReportItem[] }) {
+export function ReportsTable({ reports: initialReports }: { reports: ReportItem[] }) {
+  // Local state to allow marking reports as resolved in the test build.
+  const [reports, setReports] = useState(initialReports);
+
+  const handleResolve = (id: string) => {
+    setReports((prev) => prev.map((r) => (r.id === id ? { ...r, status: "Resolved", priority: "Low" } : r)));
+  };
+
   return (
     <Card className="overflow-hidden p-0">
       <div className="border-b border-slate-800 p-5">
@@ -19,6 +29,7 @@ export function ReportsTable({ reports }: { reports: ReportItem[] }) {
               <th className="px-5 py-4">Submitted by</th>
               <th className="px-5 py-4">Status</th>
               <th className="px-5 py-4">Priority</th>
+              <th className="px-5 py-4">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800">
@@ -28,8 +39,24 @@ export function ReportsTable({ reports }: { reports: ReportItem[] }) {
                 <td className="px-5 py-4">{report.reason}</td>
                 <td className="px-5 py-4">{report.target}</td>
                 <td className="px-5 py-4">{report.submittedBy}</td>
-                <td className="px-5 py-4"><Badge tone={report.status === "Open" ? "yellow" : report.status === "In review" ? "blue" : "green"}>{report.status}</Badge></td>
-                <td className="px-5 py-4"><Badge tone={report.priority === "High" ? "red" : report.priority === "Medium" ? "yellow" : "gray"}>{report.priority}</Badge></td>
+                <td className="px-5 py-4">
+                  <Badge tone={report.status === "Open" ? "yellow" : report.status === "In review" ? "blue" : "green"}>{report.status}</Badge>
+                </td>
+                <td className="px-5 py-4">
+                  <Badge tone={report.priority === "High" ? "red" : report.priority === "Medium" ? "yellow" : "gray"}>{report.priority}</Badge>
+                </td>
+                <td className="px-5 py-4">
+                  {report.status !== "Resolved" ? (
+                    <button
+                      onClick={() => handleResolve(report.id)}
+                      className="rounded-md bg-green-600 px-3 py-1 text-xs font-bold text-white hover:bg-green-500"
+                    >
+                      Mark resolved
+                    </button>
+                  ) : (
+                    <span className="text-xs text-slate-500">Done</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { Bell, CheckCircle2, Lock, MessageCircle, Pin, Sparkles, Star, Users } from "lucide-react";
 import { Badge } from "@/components/Badge";
 import { ButtonLink } from "@/components/ButtonLink";
-import Link from "next/link";
 import { Card } from "@/components/Card";
 import { FeedPostCard } from "@/components/FeedPostCard";
 import { RightRail } from "@/components/RightRail";
@@ -14,6 +13,9 @@ import { formatCompact } from "@/lib/format";
 import type { FeedPost } from "@/lib/mock-data";
 import { parseBadges, getProfileTheme } from "@/lib/profile-themes";
 import { prisma } from "@/lib/prisma";
+
+// Client-side actions for follow/support
+import CreatorActions from "@/components/CreatorActions";
 
 type PageProps = { params: Promise<{ username: string }> };
 
@@ -119,11 +121,10 @@ export default async function CreatorProfilePage({ params }: PageProps) {
                 </div>
               </div>
                 <div className="space-y-3 rounded-[1.5rem] border border-white/10 bg-black/25 p-4">
-                <div className="flex flex-wrap gap-2">
-                  <Link href={`/api/follows?creator=${user.username}`} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-700 px-4 py-3 text-sm font-bold text-white hover:bg-white/5"><Bell className="h-4 w-4" aria-hidden="true" /> Follow</Link>
-                  <Link href={`/creator/${user.username}/support`} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-500"><Star className="h-4 w-4" aria-hidden="true" /> Support</Link>
-                </div>
-                <ButtonLink href="/messages" variant="secondary"><MessageCircle className="mr-2 h-4 w-4" aria-hidden="true" /> Message</ButtonLink>
+                {/* Render follow/support actions via a client component using localStorage for persistence */}
+                <CreatorActions username={user.username} />
+                {/* Pass the creator username as a query parameter so fans can start a conversation directly */}
+                <ButtonLink href={`/messages?username=${user.username}`} variant="secondary"><MessageCircle className="mr-2 h-4 w-4" aria-hidden="true" /> Message</ButtonLink>
               </div>
             </div>
           </Card>
