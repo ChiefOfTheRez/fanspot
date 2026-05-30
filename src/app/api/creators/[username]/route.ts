@@ -17,6 +17,8 @@ export async function GET(_request: Request, { params }: RouteContext) {
     }
   });
   if (!creator?.creatorProfile) return fail("Creator not found", 404);
-  const posts = await prisma.post.findMany({ where: { authorId: creator.id, status: "APPROVED", visibility: "PUBLIC" }, orderBy: { createdAt: "desc" }, take: 20 });
+  // Return all approved posts from this creator (universal visibility). The client
+  // should handle access control for followers/supporters as needed.
+  const posts = await prisma.post.findMany({ where: { authorId: creator.id, status: "APPROVED" }, orderBy: { createdAt: "desc" }, take: 20 });
   return ok({ creator, posts });
 }

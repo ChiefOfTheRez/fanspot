@@ -1,20 +1,18 @@
 import { getServerSession } from "next-auth";
 import type { Prisma } from "@prisma/client";
 import { notFound } from "next/navigation";
-import { CheckCircle2, Lock, MessageCircle, Pin, Sparkles, Users } from "lucide-react";
+import { CheckCircle2, Lock, Pin, Sparkles, Users } from "lucide-react";
 import { Badge } from "@/components/Badge";
-import { ButtonLink } from "@/components/ButtonLink";
 import { Card } from "@/components/Card";
+import { CreatorSupportActions } from "@/components/CreatorSupportActions";
 import { FeedPostCard } from "@/components/FeedPostCard";
+import { RightRail } from "@/components/RightRail";
 import { Shell } from "@/components/Shell";
 import { authOptions } from "@/lib/auth";
 import { formatCompact } from "@/lib/format";
 import type { FeedPost } from "@/lib/mock-data";
 import { parseBadges, getProfileTheme } from "@/lib/profile-themes";
 import { prisma } from "@/lib/prisma";
-
-// Client-side actions for follow/support
-import CreatorActions from "@/components/CreatorActions";
 
 type PageProps = { params: Promise<{ username: string }> };
 
@@ -83,22 +81,9 @@ export default async function CreatorProfilePage({ params }: PageProps) {
   const highlightedTier = profile.highlightedTierId ? profile.tiers.find((tier) => tier.id === profile.highlightedTierId) : profile.tiers[1] ?? profile.tiers[0];
   const regularTiers = profile.tiers.filter((tier) => tier.id !== highlightedTier?.id);
   const posts = creator.posts.filter((post) => post.id !== creator.pinnedPost?.id).map(mapPost);
-  const creatorRightRail = (
-    <div className="space-y-5">
-      {highlightedTier ? <TierCard title={highlightedTier.name} price={highlightedTier.priceCents === 0 ? "Free" : `$${(highlightedTier.priceCents / 100).toFixed(2)}/mo`} text={highlightedTier.description} highlighted /> : null}
-      {regularTiers.map((tier) => <TierCard key={tier.id} title={tier.name} price={tier.priceCents === 0 ? "Free" : `$${(tier.priceCents / 100).toFixed(2)}/mo`} text={tier.description} />)}
-      <Card className={theme.panelClass}>
-        <h3 className="font-black text-white">Profile awards</h3>
-        <div className="mt-4 grid grid-cols-4 gap-2">
-          {badges.length ? badges.slice(0, 8).map((badge) => <div key={badge} title={badge} className="grid aspect-square place-items-center rounded-2xl border border-white/10 bg-white/10 text-xs font-black text-white">{badge.slice(0, 2).toUpperCase()}</div>) : <p className="col-span-4 text-sm text-slate-400">No badges yet.</p>}
-        </div>
-      </Card>
-    </div>
-  );
 
   return (
-    // Remove right rail on creator profiles. We display creator-specific information only.
-    <Shell active="/discover" rightRail={creatorRightRail}>
+    <Shell active="/discover" rightRail={<RightRail />}>
       <div className={`relative overflow-hidden rounded-[2.5rem] border border-slate-800 bg-gradient-to-br ${theme.backgroundClass} p-4 shadow-2xl md:p-6`}>
         {profile.backgroundUrl ? <img src={profile.backgroundUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-35" style={{ filter: `blur(${profile.backgroundBlur}px)` }} /> : null}
         <div className="absolute inset-0 bg-black/35" />
@@ -131,16 +116,22 @@ export default async function CreatorProfilePage({ params }: PageProps) {
                   {badges.map((badge) => <Badge key={badge} tone="yellow"><Sparkles className="mr-1 h-3 w-3" aria-hidden="true" /> {badge}</Badge>)}
                 </div>
               </div>
-                <div className="space-y-3 rounded-[1.5rem] border border-white/10 bg-black/25 p-4">
-                {/* Render follow/support actions via a client component using localStorage for persistence */}
-                <CreatorActions username={user.username} displayName={user.displayName} headline={profile.headline} />
-                {/* Pass the creator username as a query parameter so fans can start a conversation directly */}
-                <ButtonLink href={`/messages?username=${user.username}`} variant="secondary"><MessageCircle className="mr-2 h-4 w-4" aria-hidden="true" /> Message</ButtonLink>
+              <div className="space-y-3 rounded-[1.5rem] border border-white/10 bg-black/25 p-4">
+                <CreatorSupportActions
+                  username={user.username}
+                  displayName={user.displayName}
+                  tiers={profile.tiers.map((tier) => ({
+                    id: tier.id,
+                    name: tier.name,
+                    priceCents: tier.priceCents,
+                    description: tier.description ?? ""
+                  }))}
+                />
               </div>
             </div>
           </Card>
 
-          <div className="space-y-5">
+          <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
             <div className="space-y-5">
               {creator.pinnedPost ? (
                 <div>
@@ -163,6 +154,17 @@ export default async function CreatorProfilePage({ params }: PageProps) {
                 {posts.length ? posts.map((post) => <FeedPostCard key={post.id} post={post} />) : <Card><p className="text-sm text-slate-400">No visible posts yet.</p></Card>}
               </div>
             </div>
+
+            <aside className="space-y-5">
+              {highlightedTier ? <TierCard title={highlightedTier.name} price={highlightedTier.priceCents === 0 ? "Free" : `$${(highlightedTier.priceCents / 100).toFixed(2)}/mo`} text={highlightedTier.description} highlighted /> : null}
+              {regularTiers.map((tier) => <TierCard key={tier.id} title={tier.name} price={tier.priceCents === 0 ? "Free" : `$${(tier.priceCents / 100).toFixed(2)}/mo`} text={tier.description} />)}
+              <Card className={theme.panelClass}>
+                <h3 className="font-black text-white">Profile awards</h3>
+                <div className="mt-4 grid grid-cols-4 gap-2">
+                  {badges.length ? badges.slice(0, 8).map((badge) => <div key={badge} title={badge} className="grid aspect-square place-items-center rounded-2xl border border-white/10 bg-white/10 text-xs font-black text-white">{badge.slice(0, 2).toUpperCase()}</div>) : <p className="col-span-4 text-sm text-slate-400">No badges yet.</p>}
+                </div>
+              </Card>
+            </aside>
           </div>
         </div>
       </div>

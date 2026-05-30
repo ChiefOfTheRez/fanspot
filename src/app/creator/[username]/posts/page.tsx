@@ -13,7 +13,10 @@ export default async function CreatorPostsPage({ params }: PageProps) {
   const { username } = await params;
   const creator = await prisma.user.findUnique({ where: { username }, include: { creatorProfile: true } });
   if (!creator?.creatorProfile) notFound();
-  const posts = await prisma.post.findMany({ where: { authorId: creator.id, status: "APPROVED", visibility: "PUBLIC" }, orderBy: { createdAt: "desc" }, include: { _count: { select: { comments: true, likes: true, bookmarks: true } } } });
+  // Fetch all approved posts by this creator (universal visibility). We remove the
+  // visibility filter so fans can browse the full archive. UI components can
+  // still indicate if a post requires following or supporting.
+  const posts = await prisma.post.findMany({ where: { authorId: creator.id, status: "APPROVED" }, orderBy: { createdAt: "desc" }, include: { _count: { select: { comments: true, likes: true, bookmarks: true } } } });
   const mapped: FeedPost[] = posts.map((post) => ({
     id: post.id,
     authorUsername: creator.username,

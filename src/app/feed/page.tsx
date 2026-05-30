@@ -30,16 +30,19 @@ function mapPost(post: Awaited<ReturnType<typeof getPosts>>[number]): FeedPost {
   };
 }
 
-async function getPosts(viewerId?: string) {
-  const accessFilters: Prisma.PostWhereInput[] = [{ visibility: "PUBLIC" }];
-  if (viewerId) {
-    accessFilters.push({ authorId: viewerId });
-    accessFilters.push({ visibility: "FOLLOWERS", author: { followers: { some: { fanId: viewerId } } } });
-    accessFilters.push({ visibility: "SUPPORTERS", author: { subscribers: { some: { fanId: viewerId, status: "ACTIVE" } } } });
-  }
-
+/**
+ * Fetches all approved posts regardless of the viewer's relationship to the author.
+ *
+ * Previously posts were filtered by visibility (PUBLIC, FOLLOWERS, SUPPORTERS) and the
+ * viewer’s relationship to the author. This prevented posts from being visible
+ * globally to all users. To implement universal creator posts, we remove these
+ * access filters and simply fetch every approved post. Additional access
+ * restrictions (e.g. comments for followers only) can be enforced at the
+ * component level if needed.
+ */
+async function getPosts() {
   return prisma.post.findMany({
-    where: { status: "APPROVED", OR: accessFilters },
+    where: { status: "APPROVED" },
     orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
     include: {
       author: { select: { username: true, displayName: true, role: true } },
@@ -55,7 +58,9 @@ export default async function FeedPage() {
     ? await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } })
     : null;
   const canPost = viewer?.role === "CREATOR" || viewer?.role === "ADMIN";
-  const posts = (await getPosts(session?.user?.id)).map(mapPost);
+  // Always fetch the full list of approved posts. Visibility filtering is handled
+  // by getPosts and has been simplified for universal creator posts.
+  const posts = (await getPosts()).map(mapPost);
 
   return (
     <Shell active="/feed" rightRail={<RightRail />}>

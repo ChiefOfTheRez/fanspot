@@ -1,48 +1,62 @@
-import { getServerSession } from "next-auth";
-import { BookmarksClient } from "@/components/BookmarksClient";
+﻿"use client";
+
+import { Bookmark, FolderPlus, Plus } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
+import { FeedPostCard } from "@/components/FeedPostCard";
+import { PageHero } from "@/components/PageHero";
 import { RightRail } from "@/components/RightRail";
 import { Shell } from "@/components/Shell";
-import { authOptions } from "@/lib/auth";
-import type { FeedPost } from "@/lib/mock-data";
-import { prisma } from "@/lib/prisma";
+import { feedPosts } from "@/lib/mock-data";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 
-export const dynamic = "force-dynamic";
+const bookmarkGroups = ["Favorites", "Cosplay ideas", "Creator research"];
 
-export default async function BookmarksPage() {
-  const session = await getServerSession(authOptions);
-  const bookmarks = session?.user?.id
-    ? await prisma.bookmark.findMany({
-        where: { userId: session.user.id, post: { status: "APPROVED" } },
-        orderBy: { createdAt: "desc" },
-        include: {
-          post: {
-            include: {
-              author: { select: { username: true, displayName: true, role: true, creatorProfile: { select: { headline: true } } } },
-              _count: { select: { comments: true, likes: true, bookmarks: true } }
-            }
-          }
-        }
-      })
-    : [];
+export default function BookmarksPage() {
+  const { data: session } = useSession();
+  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
 
-  const posts: FeedPost[] = bookmarks.map(({ post }) => ({
-    id: post.id,
-    authorUsername: post.author.username,
-    author: post.author.displayName,
-    avatar: post.author.displayName.slice(0, 2).toUpperCase(),
-    headline: post.author.creatorProfile?.headline ?? (post.author.role === "ADMIN" ? "Admin" : post.author.role === "CREATOR" ? "Creator" : "Fan"),
-    title: post.title ?? "Post",
-    body: post.body,
-    visibility: post.visibility === "PUBLIC" ? "Public" : post.visibility === "FOLLOWERS" ? "Followers" : "Supporters",
-    createdAt: new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(post.createdAt),
-    likes: post._count.likes,
-    comments: post._count.comments,
-    bookmarks: post._count.bookmarks
-  }));
+  useEffect(() => {
+    if (!session?.user) return;
+    try {
+      const keyPrefix = `${session.user.email}-`;
+      const list = JSON.parse(localStorage.getItem(`fanspot-bookmarks-${keyPrefix}`) || "[]");
+      setBookmarkedIds(Array.isArray(list) ? list.map(String) : []);
+    } catch (err) {
+      setBookmarkedIds([]);
+    }
+  }, [session]);
+
+  const savedPosts = feedPosts.filter((post) => bookmarkedIds.includes(String(post.id)));
 
   return (
     <Shell active="/bookmarks" rightRail={<RightRail />}>
-      <BookmarksClient initialPosts={posts} />
+      <div className="space-y-5 pb-24">
+        <PageHero eyebrow="Saved" title="Bookmarks" description="Save posts and organize them into custom groups.">
+          <p className="inline-flex items-center gap-2 rounded-2xl bg-white/5 px-4 py-3 text-sm font-bold text-white"><Bookmark className="h-4 w-4" /> {savedPosts.length} saves</p>
+        </PageHero>
+        <section className="rounded-[2rem] border border-slate-800 bg-slate-950/70 p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-lg font-black text-white">Custom groups</h2>
+              <p className="mt-1 text-sm text-slate-400">Temporary MVP control for grouping saved posts. Database-backed groups can be connected later.</p>
+            </div>
+            <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white hover:bg-blue-500">
+              <Plus className="h-4 w-4" /> Create group
+            </button>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {bookmarkGroups.map((group) => (
+              <button key={group} className="inline-flex items-center gap-2 rounded-2xl border border-slate-800 px-4 py-2 text-sm font-bold text-slate-200 hover:border-blue-500 hover:text-white">
+                <FolderPlus className="h-4 w-4" /> {group}
+              </button>
+            ))}
+          </div>
+        </section>
+        {savedPosts.length > 0 ? savedPosts.map((post) => <FeedPostCard key={post.id} post={post} />) : <EmptyState icon={<Bookmark className="h-10 w-10" />} title="No bookmarks yet" description="Save posts soon and they will show up here." />}
+      </div>
     </Shell>
   );
 }
+
+

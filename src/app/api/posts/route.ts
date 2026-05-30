@@ -6,18 +6,12 @@ import { prisma } from "@/lib/prisma";
 import { postCreateSchema } from "@/lib/validators";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  const viewerId = session?.user?.id;
-
-  const accessFilters: Prisma.PostWhereInput[] = [{ visibility: "PUBLIC" }];
-  if (viewerId) {
-    accessFilters.push({ authorId: viewerId });
-    accessFilters.push({ visibility: "FOLLOWERS", author: { followers: { some: { fanId: viewerId } } } });
-    accessFilters.push({ visibility: "SUPPORTERS", author: { subscribers: { some: { fanId: viewerId, status: "ACTIVE" } } } });
-  }
-
+  // Universal posts: return all approved posts regardless of viewer context.  Any
+  // visibility or access rules should be enforced client-side or by specific
+  // API endpoints (e.g. comments, likes). By returning all posts here we
+  // ensure creators’ posts are visible to fans globally.
   const posts = await prisma.post.findMany({
-    where: { status: "APPROVED", OR: accessFilters },
+    where: { status: "APPROVED" },
     orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
     include: {
       author: { select: { username: true, displayName: true, avatarUrl: true, role: true } },
@@ -25,7 +19,6 @@ export async function GET() {
     },
     take: 50
   });
-
   return ok({ posts });
 }
 
@@ -37,7 +30,7 @@ export async function POST(request: Request) {
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true, emailVerified: true } });
     if (!user) return fail("User not found", 404);
     if (user.role !== "CREATOR" && user.role !== "ADMIN") return fail("Only creator accounts can publish posts.", 403);
-    // Test build: all creator/admin accounts can publish immediately. Production can re-enable email gating.
+    if (!user.emailVerified) return fail("Verify your email before publishing.", 403);
 
     const parsed = postCreateSchema.parse(await request.json());
     const post = await prisma.post.create({
