@@ -13,7 +13,7 @@ type SavedBookmarkPost = FeedPost & { savedAt?: string };
 
 const defaultGroups: Groups = { Favorites: [], "Cosplay ideas": [], "Creator research": [] };
 
-export function BookmarksClient() {
+export function BookmarksClient({ initialPosts = [] }: { initialPosts?: FeedPost[] }) {
   const accountPrefix = useAccountStoragePrefix();
   const savedIdsKey = scopedKey(accountPrefix, "bookmarked-ids");
   const savedPostsKey = scopedKey(accountPrefix, "bookmarked-posts");
@@ -45,11 +45,14 @@ export function BookmarksClient() {
   const allSavedPosts = useMemo(() => {
     const fromSeeds = feedPosts.filter((post) => savedIds.includes(post.id));
     const byId = new Map<string, FeedPost>();
-    [...savedSnapshots, ...fromSeeds].forEach((post) => byId.set(post.id, post));
+    [...initialPosts, ...savedSnapshots, ...fromSeeds].forEach((post) => byId.set(post.id, post));
+    if (initialPosts.length) return Array.from(byId.values());
     return Array.from(byId.values()).filter((post) => savedIds.includes(post.id));
-  }, [savedIds, savedSnapshots]);
+  }, [initialPosts, savedIds, savedSnapshots]);
 
-  const visibleIds = useMemo(() => selectedGroup === "All bookmarks" ? savedIds : groups[selectedGroup] ?? [], [selectedGroup, savedIds, groups]);
+  const serverSavedIds = useMemo(() => initialPosts.map((post) => post.id), [initialPosts]);
+  const allIds = initialPosts.length ? serverSavedIds : savedIds;
+  const visibleIds = useMemo(() => selectedGroup === "All bookmarks" ? allIds : groups[selectedGroup] ?? [], [selectedGroup, allIds, groups]);
   const visiblePosts = useMemo(() => allSavedPosts.filter((post) => visibleIds.includes(post.id)), [allSavedPosts, visibleIds]);
 
   function createGroup() {

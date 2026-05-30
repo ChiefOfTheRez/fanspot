@@ -72,33 +72,52 @@ export function FeedPostCard({ post, showComments = false }: { post: FeedPost; s
     writeJson(bookmarkPostsKey, nextPosts);
   }
 
-  function handleLike() {
+  async function handleLike() {
+    const previousLiked = liked;
+    const previousCount = likeCount;
     const nextLiked = !liked;
     const nextCount = nextLiked ? likeCount + 1 : Math.max(0, likeCount - 1);
     setLiked(nextLiked);
     setLikeCount(nextCount);
     try {
-      if (nextLiked) localStorage.setItem(likedKey, "true");
-      else localStorage.removeItem(likedKey);
-      localStorage.setItem(likeCountKey, String(nextCount));
+      const response = await fetch(`/api/posts/${post.id}/like`, { method: "POST" });
+      if (!response.ok) throw new Error("server-like-failed");
     } catch {
-      // Ignore storage errors.
+      // Fallback for demo/mock posts only. Database posts stay universal through the API.
+      try {
+        if (nextLiked) localStorage.setItem(likedKey, "true");
+        else localStorage.removeItem(likedKey);
+        localStorage.setItem(likeCountKey, String(nextCount));
+      } catch {
+        setLiked(previousLiked);
+        setLikeCount(previousCount);
+      }
     }
   }
 
-  function handleBookmark() {
+  async function handleBookmark() {
+    const previousBookmarked = bookmarked;
+    const previousCount = bookmarkCount;
     const nextBookmarked = !bookmarked;
     const nextCount = nextBookmarked ? bookmarkCount + 1 : Math.max(0, bookmarkCount - 1);
     setBookmarked(nextBookmarked);
     setBookmarkCount(nextCount);
     try {
-      if (nextBookmarked) localStorage.setItem(bookmarkedKey, "true");
-      else localStorage.removeItem(bookmarkedKey);
-      localStorage.setItem(bookmarkCountKey, String(nextCount));
-      saveBookmark(nextBookmarked);
+      const response = await fetch(`/api/posts/${post.id}/bookmark`, { method: "POST" });
+      if (!response.ok) throw new Error("server-bookmark-failed");
       window.dispatchEvent(new Event("fanspot-bookmarks-updated"));
     } catch {
-      // Ignore storage errors.
+      // Fallback for demo/mock posts only.
+      try {
+        if (nextBookmarked) localStorage.setItem(bookmarkedKey, "true");
+        else localStorage.removeItem(bookmarkedKey);
+        localStorage.setItem(bookmarkCountKey, String(nextCount));
+        saveBookmark(nextBookmarked);
+        window.dispatchEvent(new Event("fanspot-bookmarks-updated"));
+      } catch {
+        setBookmarked(previousBookmarked);
+        setBookmarkCount(previousCount);
+      }
     }
   }
 
@@ -128,17 +147,40 @@ export function FeedPostCard({ post, showComments = false }: { post: FeedPost; s
     setMenuOpen(false);
   }
 
-  function submitReport() {
-    const reports = readJson<Array<{ id: string; postId: string; reason: string; createdAt: string }>>(reportsKey, []);
+  async function submitReport() {
     const reason = reportReason.trim() || "No reason provided";
-    writeJson(reportsKey, [...reports, { id: uid(), postId: post.id, reason, createdAt: new Date().toISOString() }]);
+    try {
+      const response = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId: post.id, reason: "OTHER", details: reason })
+      });
+      if (!response.ok) throw new Error("report-failed");
+    } catch {
+      const reports = readJson<Array<{ id: string; postId: string; reason: string; createdAt: string }>>(reportsKey, []);
+      writeJson(reportsKey, [...reports, { id: uid(), postId: post.id, reason, createdAt: new Date().toISOString() }]);
+    }
     setReportReason("");
     setReportOpen(false);
     setMenuOpen(false);
     setNotice("Report sent to the moderation queue.");
   }
 
-  function hidePost() {
+  async function hidePost() {
+    const role = (session?.user as { role?: string } | undefined)?.role;
+    if (role === "ADMIN") {
+      try {
+        const response = await fetch(`/api/posts/${post.id}`, { method: "DELETE" });
+        if (!response.ok) throw new Error("delete-failed");
+        setHidden(true);
+        setNotice("Post removed globally.");
+        return;
+      } catch {
+        setNotice("Could not remove post globally.");
+        return;
+      }
+    }
+
     setHidden(true);
     try {
       localStorage.setItem(hiddenKey, "true");
@@ -169,7 +211,7 @@ export function FeedPostCard({ post, showComments = false }: { post: FeedPost; s
             <div className="absolute right-0 z-20 mt-2 w-48 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-2xl shadow-black/40">
               <button onClick={() => void sharePost()} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><Share2 className="h-4 w-4" /> Share / copy link</button>
               <button onClick={() => setReportOpen(true)} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><Flag className="h-4 w-4" /> Report post</button>
-              <button onClick={hidePost} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><X className="h-4 w-4" /> Hide post</button>
+              <button onClick={() => void hidePost()} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-slate-200 hover:bg-white/5"><X className="h-4 w-4" /> {(session?.user as { role?: string } | undefined)?.role === "ADMIN" ? "Remove post globally" : "Hide post"}</button>
             </div>
           ) : null}
         </div>
@@ -190,14 +232,14 @@ export function FeedPostCard({ post, showComments = false }: { post: FeedPost; s
       ) : null}
 
       <div className="mt-5 flex items-center gap-4 border-t border-slate-800 pt-4 text-sm text-slate-400">
-        <button onClick={handleLike} className="flex items-center gap-2 hover:text-white" aria-pressed={liked}>
+        <button onClick={() => void handleLike()} className="flex items-center gap-2 hover:text-white" aria-pressed={liked}>
           <Heart className={`h-4 w-4 ${liked ? "fill-red-500 text-red-500" : ""}`} />
           {formatCompact(likeCount)}
         </button>
         <Link href={`/post/${post.id}#comments`} className="flex items-center gap-2 hover:text-white">
           <MessageCircle className="h-4 w-4" />{formatCompact(totalComments)}
         </Link>
-        <button onClick={handleBookmark} className="flex items-center gap-2 hover:text-white" aria-pressed={bookmarked}>
+        <button onClick={() => void handleBookmark()} className="flex items-center gap-2 hover:text-white" aria-pressed={bookmarked}>
           <Bookmark className={`h-4 w-4 ${bookmarked ? "fill-blue-300 text-blue-300" : ""}`} />
           {formatCompact(bookmarkCount)}
         </button>
@@ -210,7 +252,7 @@ export function FeedPostCard({ post, showComments = false }: { post: FeedPost; s
           <p className="text-sm font-black text-white">Report this post</p>
           <textarea value={reportReason} onChange={(event) => setReportReason(event.target.value)} placeholder="Tell us what is wrong..." className="mt-3 min-h-24 w-full resize-none rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-500" />
           <div className="mt-3 flex gap-2">
-            <button onClick={submitReport} className="rounded-2xl bg-red-600 px-4 py-2 text-sm font-black text-white hover:bg-red-500">Send report</button>
+            <button onClick={() => void submitReport()} className="rounded-2xl bg-red-600 px-4 py-2 text-sm font-black text-white hover:bg-red-500">Send report</button>
             <button onClick={() => setReportOpen(false)} className="rounded-2xl border border-slate-800 px-4 py-2 text-sm font-black text-white hover:bg-white/5">Cancel</button>
           </div>
         </div>

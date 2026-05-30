@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { getServerSession } from "next-auth";
-import { Bell, Bookmark, Compass, Home, LayoutDashboard, LifeBuoy, MessageCircle, Settings, User, Wallet } from "lucide-react";
+import { Bell, Bookmark, Compass, Home, LayoutDashboard, LifeBuoy, MessageCircle, Settings, ShieldCheck, User, Wallet } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -21,6 +21,7 @@ const navItems: NavItem[] = [
   { label: "Settings", href: "/settings", icon: Settings },
   { label: "Studio", href: "/studio", icon: LayoutDashboard, roles: ["CREATOR", "ADMIN"] },
   { label: "Wallet", href: "/wallet", icon: Wallet, roles: ["CREATOR", "ADMIN"] },
+  { label: "Admin", href: "/admin", icon: ShieldCheck, roles: ["ADMIN"] },
   { label: "Support", href: "/support", icon: LifeBuoy }
 ];
 

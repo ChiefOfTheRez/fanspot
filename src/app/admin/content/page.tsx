@@ -1,75 +1,74 @@
-"use client";
-
-import { useState } from "react";
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import { CheckCircle2, Eye, XCircle } from "lucide-react";
-import { Badge } from "@/components/Badge";
+import { AdminNav } from "@/components/AdminNav";
+import { AdminPostActions } from "@/components/AdminPostActions";
 import { Card, SectionHeader } from "@/components/Card";
 import { FeedPostCard } from "@/components/FeedPostCard";
 import { Shell } from "@/components/Shell";
-import { feedPosts } from "@/lib/mock-data";
+import { authOptions } from "@/lib/auth";
+import type { FeedPost } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 
-export default function AdminContentPage() {
-  // Manage posts locally for admin review. Each post can be approved or removed.
-  const [posts, setPosts] = useState(() => feedPosts.map((p) => ({ ...p, status: "PENDING" as "PENDING" | "APPROVED" }))); 
+export const dynamic = "force-dynamic";
 
-  const handleApprove = (id: string) => {
-    setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, status: "APPROVED" } : p)));
+function mapPost(post: Awaited<ReturnType<typeof getAdminPosts>>[number]): FeedPost {
+  return {
+    id: post.id,
+    authorUsername: post.author.username,
+    author: post.author.displayName,
+    avatar: post.author.displayName.slice(0, 2).toUpperCase(),
+    headline: post.author.role === "ADMIN" ? "Admin" : post.author.role === "CREATOR" ? "Creator" : "Fan",
+    title: post.title ?? "Post",
+    body: post.body,
+    visibility: post.visibility === "PUBLIC" ? "Public" : post.visibility === "FOLLOWERS" ? "Followers" : "Supporters",
+    createdAt: new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(post.createdAt),
+    likes: post._count.likes,
+    comments: post._count.comments,
+    bookmarks: post._count.bookmarks
   };
-  const handleRemove = (id: string) => {
-    setPosts((prev) => prev.filter((p) => p.id !== id));
-  };
+}
+
+async function getAdminPosts() {
+  return prisma.post.findMany({
+    where: { status: { in: ["PENDING_REVIEW", "APPROVED", "FLAGGED"] } },
+    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    include: {
+      author: { select: { username: true, displayName: true, role: true } },
+      _count: { select: { comments: true, likes: true, bookmarks: true } }
+    },
+    take: 100
+  });
+}
+
+export default async function AdminContentPage() {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== "ADMIN") redirect("/feed");
+  const posts = await getAdminPosts();
 
   return (
     <Shell active="/admin">
       <div className="space-y-5 pb-24">
-        <SectionHeader
-          eyebrow="Admin"
-          title="Content review"
-          description="Review pending posts and media before approval. This is critical before enabling uploads."
-        />
-        <Card className="flex flex-wrap gap-2">
-          <Badge tone="blue">
-            <Eye className="mr-1 h-3 w-3" /> Pending review
-          </Badge>
-          <Badge tone="green">
-            <CheckCircle2 className="mr-1 h-3 w-3" /> Approve
-          </Badge>
-          <Badge tone="red">
-            <XCircle className="mr-1 h-3 w-3" /> Remove
-          </Badge>
+        <SectionHeader eyebrow="Admin" title="Content review" description="Approve, flag, or remove posts globally. Admin removals no longer only hide the post for the admin account." />
+        <AdminNav active="/admin/content" />
+        <Card className="flex flex-wrap gap-3 text-sm text-slate-300">
+          <span className="inline-flex items-center gap-2"><Eye className="h-4 w-4 text-blue-200" /> Pending/visible review queue</span>
+          <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-200" /> Approve public content</span>
+          <span className="inline-flex items-center gap-2"><XCircle className="h-4 w-4 text-red-200" /> Remove globally</span>
         </Card>
         <div className="space-y-5">
-          {posts.length ? (
-            posts.map((post) => (
-              <Card key={post.id} className="relative">
-                {/* Show a small badge if the post has been approved */}
-                {post.status === "APPROVED" ? (
-                  <span className="absolute right-4 top-4 rounded-full bg-green-600 px-2 py-1 text-xs font-bold text-white">Approved</span>
-                ) : null}
-                <FeedPostCard post={post} />
-                {post.status === "PENDING" ? (
-                  <div className="mt-4 flex gap-2">
-                    <button
-                      onClick={() => handleApprove(post.id)}
-                      className="flex-1 rounded-xl bg-green-600 px-4 py-2 text-sm font-bold text-white hover:bg-green-500"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => handleRemove(post.id)}
-                      className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-500"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ) : null}
-              </Card>
-            ))
-          ) : (
-            <Card>
-              <p className="p-4 text-sm text-slate-400">No posts pending review.</p>
+          {posts.length ? posts.map((post) => (
+            <Card key={post.id} className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{post.status.replaceAll("_", " ")}</p>
+                  <p className="text-sm text-slate-400">By @{post.author.username}</p>
+                </div>
+                <AdminPostActions id={post.id} status={post.status} />
+              </div>
+              <FeedPostCard post={mapPost(post)} />
             </Card>
-          )}
+          )) : <Card><p className="p-4 text-sm text-slate-400">No posts in the review queue.</p></Card>}
         </div>
       </div>
     </Shell>

@@ -1,98 +1,49 @@
-"use client";
-
-import { useState } from "react";
-import { Badge } from "@/components/Badge";
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
+import { AdminApplicationActions } from "@/components/AdminApplicationActions";
+import { AdminNav } from "@/components/AdminNav";
 import { Card } from "@/components/Card";
 import { PageHero } from "@/components/PageHero";
 import { SafetyNotice } from "@/components/SafetyNotice";
 import { Shell } from "@/components/Shell";
-import { AdminNav } from "@/components/AdminNav";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
-// Simple type for an application in this test environment
-interface Application {
-  id: string;
-  displayName: string;
-  username: string;
-  email: string;
-  category: string;
-  audience: string;
-  plan: string;
-  status: "Submitted" | "Approved" | "Rejected";
-}
+export const dynamic = "force-dynamic";
 
-export default function AdminApplicationsPage() {
-  // Local state to manage a list of applications. In a real app this would come from the backend.
-  const [applications, setApplications] = useState<Application[]>([
-    {
-      id: "app1",
-      displayName: "New Creator",
-      username: "newcreator",
-      email: "newcreator@example.com",
-      category: "Gaming",
-      audience: "I want to share my gaming streams.",
-      plan: "Standard",
-      status: "Submitted",
-    },
-  ]);
+export default async function AdminApplicationsPage() {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== "ADMIN") redirect("/feed");
 
-  const handleApprove = (id: string) => {
-    setApplications((prev) => prev.map((a) => (a.id === id ? { ...a, status: "Approved" } : a)));
-  };
-  const handleReject = (id: string) => {
-    setApplications((prev) => prev.map((a) => (a.id === id ? { ...a, status: "Rejected" } : a)));
-  };
+  const applications = await prisma.creatorApplication.findMany({
+    orderBy: { createdAt: "desc" },
+    include: { user: { select: { username: true, email: true, displayName: true, role: true } } }
+  });
 
   return (
     <Shell active="/admin">
       <div className="space-y-5 pb-24">
-        <PageHero
-          eyebrow="Admin"
-          title="Creator applications"
-          description="Review creator requests and unlock creator-only tools after approval."
-        />
+        <PageHero eyebrow="Admin" title="Creator applications" description="Approve or reject creator requests. Approval upgrades the user to creator and creates creator tiers." />
         <AdminNav active="/admin/applications" />
-        <SafetyNotice text="Applications require manual review before creator posting, wallet access, and profile customization are enabled." />
+        <SafetyNotice text="Applications are connected to the database. Approving an application immediately grants creator privileges." />
         <Card className="overflow-hidden p-0">
           {applications.length ? (
             <div className="divide-y divide-slate-800">
               {applications.map((application) => (
-                <div key={application.id} className="grid gap-4 p-5 lg:grid-cols-[1fr_220px]">
+                <div key={application.id} className="grid gap-4 p-5 lg:grid-cols-[1fr_260px]">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="font-black text-white">{application.displayName}</h2>
-                      <Badge
-                        tone={
-                          application.status === "Approved" ? "green" : application.status === "Rejected" ? "red" : "yellow"
-                        }
-                      >
-                        {application.status}
-                      </Badge>
+                      <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-bold text-slate-300">{application.status.replaceAll("_", " ")}</span>
                     </div>
                     <p className="mt-1 text-xs text-slate-500">
-                      @{application.username} · {application.category} · {application.email}
+                      @{application.desiredUsername ?? application.user.username} · {application.category} · {application.user.email} · current role: {application.user.role}
                     </p>
-                    <p className="mt-3 text-sm leading-6 text-slate-300">
-                      <strong>Audience:</strong> {application.audience}
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-slate-300">
-                      <strong>Plan:</strong> {application.plan}
-                    </p>
+                    <p className="mt-3 text-sm leading-6 text-slate-300"><strong>Audience:</strong> {application.audienceSummary}</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-300"><strong>Plan:</strong> {application.planSummary}</p>
+                    {application.reviewNotes ? <p className="mt-2 text-sm leading-6 text-slate-400"><strong>Review notes:</strong> {application.reviewNotes}</p> : null}
                   </div>
-                  {/* Action buttons to approve or reject */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleApprove(application.id)}
-                      className="flex-1 rounded-xl bg-green-600 px-4 py-2 text-sm font-bold text-white hover:bg-green-500"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => handleReject(application.id)}
-                      className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-500"
-                    >
-                      Reject
-                    </button>
-                  </div>
+                  <AdminApplicationActions id={application.id} />
                 </div>
               ))}
             </div>

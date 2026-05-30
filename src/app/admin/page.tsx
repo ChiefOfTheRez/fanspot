@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ClipboardCheck, CreditCard, FileWarning, ShieldCheck, UserCheck } from "lucide-react";
+import { ClipboardCheck, CreditCard, FileWarning, ShieldCheck, UserCheck, UserPlus } from "lucide-react";
 import { ReportsTable } from "@/components/AdminTable";
 import { Badge } from "@/components/Badge";
 import { Card, SectionHeader } from "@/components/Card";
@@ -9,6 +9,7 @@ import { Shell } from "@/components/Shell";
 import { platformMetrics, reports } from "@/lib/mock-data";
 
 const adminLinks = [
+  { href: "/admin/applications", icon: UserPlus, title: "Applications", text: "Approve creator applications and grant creator privileges." },
   { href: "/admin/reports", icon: FileWarning, title: "Reports", text: "Review user-submitted reports and moderation cases." },
   { href: "/admin/users", icon: UserCheck, title: "Users", text: "View account status, roles, and restrictions." },
   { href: "/admin/content", icon: ClipboardCheck, title: "Content", text: "Review posts and media." },

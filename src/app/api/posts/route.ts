@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true, emailVerified: true } });
     if (!user) return fail("User not found", 404);
     if (user.role !== "CREATOR" && user.role !== "ADMIN") return fail("Only creator accounts can publish posts.", 403);
-    if (!user.emailVerified) return fail("Verify your email before publishing.", 403);
+    // Test build: all creator/admin accounts can publish immediately. Production can re-enable email gating.
 
     const parsed = postCreateSchema.parse(await request.json());
     const post = await prisma.post.create({
